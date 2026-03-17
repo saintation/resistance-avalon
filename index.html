@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
     <title>레지스탕스 아발론: 온라인</title>
     <style>
         /* 트렌디한 다크 모드 스타일 정의 */
@@ -351,6 +352,85 @@
                 });
             }
         });
+
+        // --- 6. 게임 시작 로직 (역할 배분) ---
+startGameBtn.addEventListener('click', () => {
+    if (!isHost) return;
+
+    get(ref(db, `rooms/${currentRoomId}/players`)).then((snapshot) => {
+        const players = snapshot.val();
+        const playerIds = Object.keys(players);
+        const count = playerIds.length;
+
+        if (count < 5 || count > 10) return alert("5~10명일 때만 시작 가능합니다.");
+
+        // 인원별 악의 무리 수 (설명서 기준)
+        const evilCountMap = { 5: 2, 6: 2, 7: 3, 8: 3, 9: 3, 10: 4 };
+        const evilCount = evilCountMap[count];
+
+        // 역할 리스트 생성
+        let roles = [];
+        // 기본: 멀린(선), 암살자(악) 1명씩 포함
+        roles.push("Merlin");
+        roles.push("Assassin");
+        
+        // 나머지 선/악 비율에 맞춰 일반 역할 채우기
+        for (let i = 0; i < (count - evilCount - 1); i++) roles.push("Servant of Arthur");
+        for (let i = 0; i < (evilCount - 1); i++) roles.push("Minion of Mordred");
+
+        // 역할 셔플 (랜덤 섞기)
+        roles.sort(() => Math.random() - 0.5);
+
+        // DB 업데이트: 각 플레이어에게 역할 할당 및 게임 상태 변경
+        const updates = {};
+        playerIds.forEach((id, index) => {
+            updates[`rooms/${currentRoomId}/players/${id}/role`] = roles[index];
+        });
+        updates[`rooms/${currentRoomId}/gameState`] = "playing";
+
+        update(ref(db), updates).then(() => {
+            console.log("게임 시작 및 역할 배분 완료");
+        });
+    });
+});
+
+// --- 7. 실시간 게임 상태 감시 (onValue 추가) ---
+// startRealtimeSync 함수 내부에 아래 코드를 추가하여 상태 변화를 감지합니다.
+onValue(ref(db, `rooms/${roomId}/gameState`), (snapshot) => {
+    const state = snapshot.val();
+    if (state === "playing") {
+        // 게임 화면 UI를 역할 공개 모드로 전환하는 함수 호출
+        renderGamePlay();
+    }
+});
+
+function renderGamePlay() {
+    // 1. 대기실 UI 숨기기
+    playerListUI.classList.add('hidden');
+    readyBtn.classList.add('hidden');
+    startGameBtn.classList.add('hidden');
+
+    // 2. 내 역할 정보 가져와서 보여주기
+    get(ref(db, `rooms/${currentRoomId}/players/${myUserId}`)).then((snapshot) => {
+        const myData = snapshot.val();
+        const myRole = myData.role;
+        
+        document.getElementById('myRole').innerText = translateRole(myRole);
+        document.getElementById('myRole').style.color = isEvil(myRole) ? "var(--danger)" : "var(--success)";
+        
+        // 3. '밤' 단계 안내 (멀린은 악을 보고, 악은 서로를 확인)
+        alert(`당신은 [${translateRole(myRole)}] 입니다! 역할을 확인하세요.`);
+    });
+}
+
+// 역할 번역 및 진영 판별 함수
+function translateRole(role) {
+    const map = { "Merlin": "멀린 (선)", "Assassin": "암살자 (악)", "Servant of Arthur": "선량한 시민", "Minion of Mordred": "악의 무리" };
+    return map[role] || role;
+}
+function isEvil(role) {
+    return role === "Assassin" || role === "Minion of Mordred";
+}
 
         window.onload = checkSession;
 
