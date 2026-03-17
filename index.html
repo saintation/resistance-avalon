@@ -2,17 +2,34 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>아발론 온라인 (GitHub Pages)</title>
+    <title>레지스탕스 아발론</title>
 </head>
 <body>
-    <h1>아발론 DB 연결 준비</h1>
-    <p>이 화면이 보인다면 깃허브 호스팅 성공입니다.</p>
+    <h1>아발론 온라인 (웹 UI 버전)</h1>
+    <p>파이어베이스 DB 연결 테스트 중입니다.</p>
     
     <script type="module">
+        // 파이어베이스 모듈 로드
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+        import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
-        console.log("파이어베이스 모듈 로드 성공 (F12 개발자 도구에서 확인)");
+        // 발급받은 값을 아래 객체 안에 채워 넣습니다.
+        const firebaseConfig = {
+            apiKey: "AIzaSyBlKEJTStPNGlABAX-BVPgURoN-5qsTn_k",
+            authDomain: "resistance-avalon-6542b.firebaseapp.com",
+            databaseURL: "https://resistance-avalon-6542b-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "resistance-avalon-6542b",
+            storageBucket: "resistance-avalon-6542b.firebasestorage.app",
+            messagingSenderId: "398696164856",
+            appId: "1:398696164856:web:2ac9bcad7603186b1e7a0d",
+            measurementId: "G-6NEESF297E"
+  };;
+
+        // 초기화 및 DB 연결
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        
+        console.log("파이어베이스 설정 및 연결 완료!");
     </script>
 </body>
 </html>
