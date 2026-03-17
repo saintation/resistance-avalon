@@ -3,143 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
     <title>레지스탕스 아발론: 온라인</title>
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
     <style>
-        /* 트렌디한 다크 모드 스타일 정의 */
         :root {
-            --bg-color: #121212; /* 아주 어두운 회색 */
-            --card-bg: #1e1e1e; /* 약간 더 밝은 회색 카드 */
-            --text-main: #e0e0e0; /* 연한 회색 글씨 */
-            --accent: #bb86fc; /* 트렌디한 보라색 포인트 */
-            --accent-hover: #985eff; /* 포인트 색상 호버 효과 */
-            --danger: #cf6679; /* 부드러운 빨간색 (경고/나가기) */
-            --success: #03dac6; /* 부드러운 청록색 (준비 완료) */
+            --bg-color: #121212; --card-bg: #1e1e1e; --text-main: #e0e0e0;
+            --accent: #bb86fc; --accent-hover: #985eff;
+            --danger: #cf6679; --success: #03dac6;
         }
-
         body { 
-            font-family: 'Pretendard', sans-serif; /* 트렌디한 폰트 권장 */
-            background-color: var(--bg-color); 
-            color: var(--text-main);
-            text-align: center; 
-            margin: 0;
-            padding: 50px 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            font-family: 'Pretendard', sans-serif; background-color: var(--bg-color); color: var(--text-main);
+            text-align: center; margin: 0; padding: 50px 20px; display: flex; flex-direction: column; align-items: center;
         }
-
         .hidden { display: none !important; }
-
-        /* 공통 컨테이너(카드) 스타일 */
         .container { 
-            background-color: var(--card-bg);
-            padding: 30px; 
-            width: 100%;
-            max-width: 400px; /* PC에서도 너무 퍼지지 않게 */
-            margin-bottom: 20px;
-            border-radius: 16px; /* 둥글게 */
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3); /* 부드러운 그림자 */
-            border: 1px solid #333;
+            background-color: var(--card-bg); padding: 30px; width: 100%; max-width: 400px; 
+            margin-bottom: 20px; border-radius: 16px; border: 1px solid #333;
         }
-
         h1 { color: var(--accent); margin-bottom: 10px; font-weight: 800; }
         h3 { margin-top: 0; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
-
-        /* 입력창 및 버튼 스타일 */
-        input, button { 
-            margin: 8px 0; 
-            padding: 14px; 
-            width: 100%; 
-            border-radius: 8px; 
-            border: none;
-            box-sizing: border-box; /* 패딩 포함 크기 계산 */
-            font-size: 16px;
-        }
-
-        input {
-            background-color: #2c2c2c;
-            color: var(--text-main);
-            border: 1px solid #444;
-        }
+        input, button { margin: 8px 0; padding: 14px; width: 100%; border-radius: 8px; border: none; box-sizing: border-box; font-size: 16px; }
+        input { background-color: #2c2c2c; color: var(--text-main); border: 1px solid #444; }
         input:focus { outline: 2px solid var(--accent); }
-
-        button {
-            cursor: pointer;
-            font-weight: 600;
-            transition: background-color 0.2s; /* 부드러운 변환 효과 */
-        }
-
-        /* 메인 포인트 버튼 (생성, 입장) */
-        .btn-accent {
-            background-color: var(--accent);
-            color: #000;
-        }
-        .btn-accent:hover { background-color: var(--accent-hover); }
-
-        /* 보조 버튼 (준비) */
-        .btn-ready {
-            background-color: transparent;
-            border: 2px solid var(--success);
-            color: var(--success);
-        }
-        .btn-ready:hover { background-color: rgba(3, 218, 198, 0.1); }
+        button { cursor: pointer; font-weight: 600; }
+        .btn-accent { background-color: var(--accent); color: #000; }
+        .btn-ready { background-color: transparent; border: 2px solid var(--success); color: var(--success); }
+        .btn-ready.is-ready { background-color: var(--success); color: #000; }
+        .btn-danger { background-color: transparent; border: 2px solid var(--danger); color: var(--danger); }
+        #playerList { list-style: none; padding: 0; margin: 20px 0; text-align: left; }
+        .player-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background-color: rgba(255,255,255,0.05); margin-bottom: 8px; border-radius: 8px; }
+        .status-badge { font-size: 12px; padding: 4px 8px; border-radius: 4px; background-color: #444; color: #aaa; }
+        .status-badge.ready { background-color: var(--success); color: #000; }
+        #startGameBtn { background-color: #ff9800; color: #000; }
         
-        /* 준비 완료 상태 */
-        .btn-ready.is-ready {
-            background-color: var(--success);
-            color: #000;
-        }
-
-        /* 위험/나가기 버튼 */
-        .btn-danger {
-            background-color: transparent;
-            border: 2px solid var(--danger);
-            color: var(--danger);
-        }
-        .btn-danger:hover { background-color: rgba(207, 102, 121, 0.1); }
-
-        /* 플레이어 목록 스타일 */
-        #playerList {
-            list-style: none;
-            padding: 0;
-            margin: 20px 0;
-            text-align: left;
-        }
-
-        .player-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 16px;
-            background-color: rgba(255,255,255,0.05);
-            margin-bottom: 8px;
-            border-radius: 8px;
-        }
-
-        .player-name { font-weight: 500; }
-        
-        .status-badge {
-            font-size: 12px;
-            padding: 4px 8px;
-            border-radius: 4px;
-            background-color: #444;
-            color: #aaa;
-        }
-        
-        /* 준비 완료 뱃지 */
-        .status-badge.ready {
-            background-color: var(--success);
-            color: #000;
-        }
-
-        /* 게임 시작 버튼 (방장 전용) */
-        #startGameBtn {
-            margin-top: 20px;
-            background-color: #ff9800; /* 주황색 */
-            color: #000;
-        }
-
+        /* 게임 플레이 영역 전용 스타일 */
+        .role-box { border: 2px solid #555; padding: 20px; border-radius: 12px; background-color: #252525; margin-bottom: 15px;}
+        .secret-box { border: 1px dashed var(--danger); padding: 15px; border-radius: 12px; background-color: rgba(207, 102, 121, 0.05); }
     </style>
 </head>
 <body>
@@ -147,7 +46,7 @@
 
     <div id="lobbyScreen" class="container">
         <h3>대기실</h3>
-        <input type="text" id="nicknameInput" placeholder="닉네임 (최대 8자)" maxlength="8"/>
+        <input type="text" id="nicknameInput" placeholder="닉네임 입력" maxlength="8"/>
         <input type="text" id="roomCodeInput" placeholder="방 코드 4자리 (입장시)" maxlength="4" />
         <button id="createRoomBtn" class="btn-accent">새로운 방 만들기</button>
         <button id="joinRoomBtn" class="btn-accent">기존 방 입장하기</button>
@@ -155,119 +54,108 @@
 
     <div id="gameScreen" class="container hidden">
         <h3 id="roomTitle">방 코드: LOADING</h3>
-        
-        <ul id="playerList"></ul>
-
         <p>내 닉네임: <span id="myNickname" style="color: var(--accent); font-weight:bold;"></span></p>
-        
-        <button id="readyBtn" class="btn-ready">준비하기</button>
-        <button id="leaveRoomBtn" class="btn-danger">방 나가기</button>
-        
-        <button id="startGameBtn" class="btn-accent hidden">게임 시작 (5~10명)</button>
+
+        <div id="waitingArea">
+            <ul id="playerList"></ul>
+            <button id="readyBtn" class="btn-ready">준비하기</button>
+            <button id="startGameBtn" class="hidden">게임 시작 (5~10명)</button>
+        </div>
+
+        <div id="playArea" class="hidden">
+            <h2 style="color: var(--accent);">🌙 밤 단계: 역할 확인</h2>
+            <div class="role-box">
+                <p style="margin:0 0 10px 0; color:#aaa;">당신의 정체는...</p>
+                <h1 id="myRoleDisplay" style="margin: 0; font-size: 28px;">로딩 중</h1>
+                <p id="roleDescription" style="font-size: 14px; margin-top: 10px;"></p>
+            </div>
+            
+            <div id="secretInfoArea" class="secret-box hidden">
+                <h4 style="color: var(--danger); margin-top:0;">⚠️ 기밀 정보 (다른 사람에게 비밀 유지)</h4>
+                <ul id="secretInfoList" style="list-style: none; padding: 0; text-align: left; margin:0;"></ul>
+            </div>
+        </div>
+
+        <button id="leaveRoomBtn" class="btn-danger" style="margin-top:20px;">방 나가기</button>
     </div>
 
     <script type="module">
-        // 1. 파이어베이스 기능 함수들 (CDN에서 로드)
-        import { ref, set, get, onValue, update } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
-        // 2. [핵심] 분리해둔 설정 파일에서 db 객체만 불러오기
+        // 모듈 분리된 설정 파일에서 db 객체만 가져오기
         import { db } from "./firebase-config.js";
+        import { ref, set, get, onValue, update } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
-        // UI 요소 및 상태 변수
+        // UI 요소
         const lobbyScreen = document.getElementById('lobbyScreen');
         const gameScreen = document.getElementById('gameScreen');
+        const waitingArea = document.getElementById('waitingArea');
+        const playArea = document.getElementById('playArea');
         const playerListUI = document.getElementById('playerList');
-        const nicknameInput = document.getElementById('nicknameInput');
-        const roomCodeInput = document.getElementById('roomCodeInput');
         const readyBtn = document.getElementById('readyBtn');
         const startGameBtn = document.getElementById('startGameBtn');
         
         let currentRoomId = null;
         let myUserId = null;
-        let isHost = false; // 내가 방장인지 여부
-        let playerListCleanup = null; // 실시간 리스너 해제용 함수
+        let isHost = false;
+        let gameStateCleanup = null;
 
-        // 고유 유저 ID 생성 함수
         const generateUserId = () => 'user_' + Math.random().toString(36).substr(2, 9);
 
-        // --- 1. 세션 복구 및 실시간 리스너 연결 ---
-        function checkSession() {
+        // --- 세션 복구 ---
+        window.onload = () => {
             const savedSession = localStorage.getItem('avalon_session');
             if (savedSession) {
                 const sessionData = JSON.parse(savedSession);
-                // DB에 내 정보가 여전히 존재하는지 확인
                 get(ref(db, `rooms/${sessionData.roomId}/players/${sessionData.userId}`)).then((snapshot) => {
                     if (snapshot.exists()) {
                         myUserId = sessionData.userId;
                         currentRoomId = sessionData.roomId;
-                        // 실시간 동기화 시작
                         startRealtimeSync(sessionData.roomId, sessionData.nickname);
                     } else {
                         localStorage.removeItem('avalon_session');
                     }
                 });
             }
-        }
+        };
 
-        // --- 2. 실시간 동기화 핵심 logic (onValue) ---
+        // --- 실시간 동기화 시작 ---
         function startRealtimeSync(roomId, nickname) {
             lobbyScreen.classList.add('hidden');
             gameScreen.classList.remove('hidden');
             document.getElementById('roomTitle').innerText = `방 코드: ${roomId}`;
             document.getElementById('myNickname').innerText = nickname;
 
-            // 기존 리스너가 있다면 제거 (중복 방지)
-            if (playerListCleanup) playerListCleanup();
-
-            // /rooms/방코드/players 노드를 실시간 감시
-            const playersRef = ref(db, `rooms/${roomId}/players`);
-            playerListCleanup = onValue(playersRef, (snapshot) => {
+            // 1. 플레이어 목록 감시
+            onValue(ref(db, `rooms/${roomId}/players`), (snapshot) => {
                 const playersData = snapshot.val();
                 if (!playersData) return;
 
-                playerListUI.innerHTML = ''; // 목록 초기화
-                let playerCount = 0;
-                let readyCount = 0;
-                let firstPlayerId = null;
+                playerListUI.innerHTML = ''; 
+                let playerCount = 0; let readyCount = 0; let firstPlayerId = null;
 
-                // 플레이어 데이터를 순회하며 UI 생성
                 Object.entries(playersData).forEach(([userId, player], index) => {
                     playerCount++;
-                    if (index === 0) firstPlayerId = userId; // 첫 번째 입장자를 방장 후보로
+                    if (index === 0) firstPlayerId = userId;
                     if (player.isReady) readyCount++;
 
                     const li = document.createElement('li');
                     li.className = 'player-item';
-                    
-                    // 방장 표시 (첫 번째 플레이어)
                     const hostMarker = (index === 0) ? '<span style="color:#ff9800; margin-right:5px;">★</span>' : '';
-                    
-                    // 준비 상태에 따른 뱃지 스타일
                     const statusClass = player.isReady ? 'ready' : '';
                     const statusText = player.isReady ? '준비 완료' : '대기 중';
 
-                    li.innerHTML = `
-                        <span class="player-name">${hostMarker}${player.nickname}</span>
-                        <span class="status-badge ${statusClass}">${statusText}</span>
-                    `;
+                    li.innerHTML = `<span class="player-name">${hostMarker}${player.nickname}</span><span class="status-badge ${statusClass}">${statusText}</span>`;
                     playerListUI.appendChild(li);
 
-                    // 내 준비 상태 버튼 업데이트
                     if (userId === myUserId) {
-                        if (player.isReady) {
-                            readyBtn.innerText = "준비 완료!";
-                            readyBtn.classList.add('is-ready');
-                        } else {
-                            readyBtn.innerText = "준비하기";
-                            readyBtn.classList.remove('is-ready');
-                        }
+                        readyBtn.innerText = player.isReady ? "준비 완료!" : "준비하기";
+                        if (player.isReady) readyBtn.classList.add('is-ready');
+                        else readyBtn.classList.remove('is-ready');
                     }
                 });
 
-                // --- 방장 및 게임 시작 로직 ---
                 isHost = (myUserId === firstPlayerId);
                 if (isHost) {
                     startGameBtn.classList.remove('hidden');
-                    // 5~10명이고 모두 준비했을 때만 시작 버튼 활성화
                     if (playerCount >= 5 && playerCount <= 10 && readyCount === playerCount) {
                         startGameBtn.disabled = false;
                         startGameBtn.innerText = `게임 시작 (${playerCount}명)`;
@@ -277,163 +165,144 @@
                         startGameBtn.innerText = `시작 대기 (${playerCount}/5~10명 준비)`;
                         startGameBtn.style.opacity = 0.5;
                     }
-                } else {
-                    startGameBtn.classList.add('hidden');
+                }
+            });
+
+            // 2. 게임 상태(gameState) 감시 - 이 부분이 핵심입니다.
+            if(gameStateCleanup) gameStateCleanup();
+            gameStateCleanup = onValue(ref(db, `rooms/${roomId}/gameState`), (snapshot) => {
+                const state = snapshot.val();
+                if (state === "playing") {
+                    transitionToGamePhase();
                 }
             });
         }
 
-        // --- 3. 방 만들기/입장하기 로직 (DB 구조 개선) ---
-        function joinRoomLogic(roomId, nickname, isCreating) {
+        // --- 화면 전환 및 역할 공개 로직 ---
+        function transitionToGamePhase() {
+            waitingArea.classList.add('hidden'); // 대기실 UI 숨김
+            playArea.classList.remove('hidden'); // 플레이 영역 표시
+
+            get(ref(db, `rooms/${currentRoomId}/players/${myUserId}`)).then((snapshot) => {
+                const myRole = snapshot.val().role;
+                const roleDisplay = document.getElementById('myRoleDisplay');
+                const roleDesc = document.getElementById('roleDescription');
+
+                if (myRole === "Merlin") {
+                    roleDisplay.innerText = "멀린 (선)";
+                    roleDisplay.style.color = "var(--success)";
+                    roleDesc.innerText = "당신은 누가 악의 무리인지 알 수 있습니다.";
+                    showSecretInfo("Merlin");
+                } else if (myRole === "Assassin") {
+                    roleDisplay.innerText = "암살자 (악)";
+                    roleDisplay.style.color = "var(--danger)";
+                    roleDesc.innerText = "당신은 다른 악의 무리를 압니다. 마지막에 멀린을 암살하세요.";
+                    showSecretInfo("Evil");
+                } else if (myRole === "Minion of Mordred") {
+                    roleDisplay.innerText = "악의 무리 (악)";
+                    roleDisplay.style.color = "var(--danger)";
+                    roleDesc.innerText = "당신은 다른 악의 무리가 누구인지 압니다.";
+                    showSecretInfo("Evil");
+                } else {
+                    roleDisplay.innerText = "선량한 시민 (선)";
+                    roleDisplay.style.color = "var(--success)";
+                    roleDesc.innerText = "당신은 아무 정보가 없습니다. 대화를 통해 악을 찾아내세요.";
+                }
+            });
+        }
+
+        // --- 기밀 정보 표시 (멀린과 악의 무리에게만 보임) ---
+        function showSecretInfo(viewerType) {
+            get(ref(db, `rooms/${currentRoomId}/players`)).then((snapshot) => {
+                const players = snapshot.val();
+                const secretArea = document.getElementById('secretInfoArea');
+                const secretList = document.getElementById('secretInfoList');
+                secretList.innerHTML = '';
+                let hasInfo = false;
+
+                Object.entries(players).forEach(([id, player]) => {
+                    if (id === myUserId) return; // 자기 자신은 제외
+                    const isEvil = player.role === "Assassin" || player.role === "Minion of Mordred";
+                    
+                    if (viewerType === "Merlin" && isEvil) {
+                        secretList.innerHTML += `<li style="margin-bottom:5px;">😈 <span style="font-weight:bold;">${player.nickname}</span> (악의 무리)</li>`;
+                        hasInfo = true;
+                    } else if (viewerType === "Evil" && isEvil) {
+                        secretList.innerHTML += `<li style="margin-bottom:5px;">🤝 <span style="font-weight:bold;">${player.nickname}</span> (같은 편)</li>`;
+                        hasInfo = true;
+                    }
+                });
+
+                if (hasInfo) secretArea.classList.remove('hidden');
+            });
+        }
+
+        // --- 방 만들기 및 입장 ---
+        function joinRoomLogic(roomId, nickname) {
             myUserId = generateUserId();
             currentRoomId = roomId;
-
-            const playerRef = ref(db, `rooms/${roomId}/players/${myUserId}`);
-            // 초기 플레이어 데이터: 닉네임, 준비상태(false), 역할(pending)
-            set(playerRef, {
-                nickname: nickname,
-                isReady: false, 
-                role: "pending"
-            }).then(() => {
+            set(ref(db, `rooms/${roomId}/players/${myUserId}`), { nickname: nickname, isReady: false, role: "pending" }).then(() => {
                 localStorage.setItem('avalon_session', JSON.stringify({ roomId, userId: myUserId, nickname }));
                 startRealtimeSync(roomId, nickname);
             });
         }
 
         document.getElementById('createRoomBtn').addEventListener('click', () => {
-            const nickname = nicknameInput.value.trim();
-            if (!nickname) return alert("닉네임을 입력하세요.");
-            const roomId = Math.floor(1000 + Math.random() * 9000).toString(); // 4자리 코드
-            
-            // 방 생성 시 방 노드 자체를 초기화 (플레이어 노드는 joinRoomLogic에서 생성)
-            set(ref(db, `rooms/${roomId}`), {
-                createdAt: Date.now(),
-                gameState: "lobby" // 게임 상태 관리용
-            }).then(() => {
-                joinRoomLogic(roomId, nickname, true);
+            const nickname = document.getElementById('nicknameInput').value.trim();
+            if (!nickname) return;
+            const roomId = Math.floor(1000 + Math.random() * 9000).toString();
+            set(ref(db, `rooms/${roomId}`), { createdAt: Date.now(), gameState: "lobby" }).then(() => {
+                joinRoomLogic(roomId, nickname);
             });
         });
 
         document.getElementById('joinRoomBtn').addEventListener('click', () => {
-            const nickname = nicknameInput.value.trim();
-            const roomId = roomCodeInput.value.trim();
-            if (!nickname || !roomId) return alert("닉네임과 방 코드를 입력하세요.");
-
+            const nickname = document.getElementById('nicknameInput').value.trim();
+            const roomId = document.getElementById('roomCodeInput').value.trim();
+            if (!nickname || !roomId) return;
             get(ref(db, `rooms/${roomId}`)).then((snapshot) => {
-                if (snapshot.exists()) {
-                    // 이미 존재하는 방에 입장
-                    joinRoomLogic(roomId, nickname, false);
-                } else {
-                    alert("존재하지 않는 방 코드입니다.");
-                }
+                if (snapshot.exists() && snapshot.val().gameState === "lobby") joinRoomLogic(roomId, nickname);
+                else alert("존재하지 않거나 이미 시작된 방입니다.");
             });
         });
 
-        // --- 4. 준비하기 기능 (update) ---
+        // --- 준비 및 시작 ---
         readyBtn.addEventListener('click', () => {
-            if (!currentRoomId || !myUserId) return;
-            
-            const myPlayerRef = ref(db, `rooms/${currentRoomId}/players/${myUserId}`);
-            get(myPlayerRef).then((snapshot) => {
-                const currentData = snapshot.val();
-                // 현재 상태의 반대로 토글 (true <-> false)
-                update(myPlayerRef, { isReady: !currentData.isReady });
+            get(ref(db, `rooms/${currentRoomId}/players/${myUserId}`)).then((snapshot) => {
+                update(ref(db, `rooms/${currentRoomId}/players/${myUserId}`), { isReady: !snapshot.val().isReady });
             });
         });
 
-        // --- 5. 방 나가기 및 리스너 해제 ---
-        document.getElementById('leaveRoomBtn').addEventListener('click', () => {
-            if (window.confirm("정말 방을 나가시겠습니까?")) {
-                if (playerListCleanup) playerListCleanup(); // 리스너 해제
+        // 게임 시작 및 역할 배분
+        startGameBtn.addEventListener('click', () => {
+            if (!isHost) return;
+            get(ref(db, `rooms/${currentRoomId}/players`)).then((snapshot) => {
+                const playerIds = Object.keys(snapshot.val());
+                const count = playerIds.length;
+                if (count < 5 || count > 10) return alert("5~10명이어야 합니다.");
 
+                const evilCount = { 5: 2, 6: 2, 7: 3, 8: 3, 9: 3, 10: 4 }[count];
+                let roles = ["Merlin", "Assassin"];
+                for (let i = 0; i < (count - evilCount - 1); i++) roles.push("Servant of Arthur");
+                for (let i = 0; i < (evilCount - 1); i++) roles.push("Minion of Mordred");
+                roles.sort(() => Math.random() - 0.5);
+
+                const updates = {};
+                playerIds.forEach((id, index) => updates[`rooms/${currentRoomId}/players/${id}/role`] = roles[index]);
+                updates[`rooms/${currentRoomId}/gameState`] = "playing"; // 상태 변경 -> 모든 클라이언트에서 화면 전환 트리거
+
+                update(ref(db), updates);
+            });
+        });
+
+        // --- 방 나가기 ---
+        document.getElementById('leaveRoomBtn').addEventListener('click', () => {
+            if (confirm("방을 나가시겠습니까?")) {
                 set(ref(db, `rooms/${currentRoomId}/players/${myUserId}`), null).then(() => {
-                    localStorage.removeItem('avalon_session');
-                    location.reload();
+                    localStorage.removeItem('avalon_session'); location.reload();
                 });
             }
         });
-
-        // --- 6. 게임 시작 로직 (역할 배분) ---
-startGameBtn.addEventListener('click', () => {
-    if (!isHost) return;
-
-    get(ref(db, `rooms/${currentRoomId}/players`)).then((snapshot) => {
-        const players = snapshot.val();
-        const playerIds = Object.keys(players);
-        const count = playerIds.length;
-
-        if (count < 5 || count > 10) return alert("5~10명일 때만 시작 가능합니다.");
-
-        // 인원별 악의 무리 수 (설명서 기준)
-        const evilCountMap = { 5: 2, 6: 2, 7: 3, 8: 3, 9: 3, 10: 4 };
-        const evilCount = evilCountMap[count];
-
-        // 역할 리스트 생성
-        let roles = [];
-        // 기본: 멀린(선), 암살자(악) 1명씩 포함
-        roles.push("Merlin");
-        roles.push("Assassin");
-        
-        // 나머지 선/악 비율에 맞춰 일반 역할 채우기
-        for (let i = 0; i < (count - evilCount - 1); i++) roles.push("Servant of Arthur");
-        for (let i = 0; i < (evilCount - 1); i++) roles.push("Minion of Mordred");
-
-        // 역할 셔플 (랜덤 섞기)
-        roles.sort(() => Math.random() - 0.5);
-
-        // DB 업데이트: 각 플레이어에게 역할 할당 및 게임 상태 변경
-        const updates = {};
-        playerIds.forEach((id, index) => {
-            updates[`rooms/${currentRoomId}/players/${id}/role`] = roles[index];
-        });
-        updates[`rooms/${currentRoomId}/gameState`] = "playing";
-
-        update(ref(db), updates).then(() => {
-            console.log("게임 시작 및 역할 배분 완료");
-        });
-    });
-});
-
-// --- 7. 실시간 게임 상태 감시 (onValue 추가) ---
-// startRealtimeSync 함수 내부에 아래 코드를 추가하여 상태 변화를 감지합니다.
-onValue(ref(db, `rooms/${roomId}/gameState`), (snapshot) => {
-    const state = snapshot.val();
-    if (state === "playing") {
-        // 게임 화면 UI를 역할 공개 모드로 전환하는 함수 호출
-        renderGamePlay();
-    }
-});
-
-function renderGamePlay() {
-    // 1. 대기실 UI 숨기기
-    playerListUI.classList.add('hidden');
-    readyBtn.classList.add('hidden');
-    startGameBtn.classList.add('hidden');
-
-    // 2. 내 역할 정보 가져와서 보여주기
-    get(ref(db, `rooms/${currentRoomId}/players/${myUserId}`)).then((snapshot) => {
-        const myData = snapshot.val();
-        const myRole = myData.role;
-        
-        document.getElementById('myRole').innerText = translateRole(myRole);
-        document.getElementById('myRole').style.color = isEvil(myRole) ? "var(--danger)" : "var(--success)";
-        
-        // 3. '밤' 단계 안내 (멀린은 악을 보고, 악은 서로를 확인)
-        alert(`당신은 [${translateRole(myRole)}] 입니다! 역할을 확인하세요.`);
-    });
-}
-
-// 역할 번역 및 진영 판별 함수
-function translateRole(role) {
-    const map = { "Merlin": "멀린 (선)", "Assassin": "암살자 (악)", "Servant of Arthur": "선량한 시민", "Minion of Mordred": "악의 무리" };
-    return map[role] || role;
-}
-function isEvil(role) {
-    return role === "Assassin" || role === "Minion of Mordred";
-}
-
-        window.onload = checkSession;
-
     </script>
 </body>
 </html>
