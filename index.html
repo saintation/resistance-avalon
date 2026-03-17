@@ -166,19 +166,10 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getDatabase, ref, set, get, onValue, update } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
-
-        // [중요] 발급받으신 파이어베이스 설정값을 여기에 다시 넣어주세요!
-        const firebaseConfig = {
-            apiKey: "여기에_값을_입력하세요",
-            authDomain: "여기에_값을_입력하세요",
-            databaseURL: "여기에_DB_URL을_입력하세요",
-            projectId: "여기에_값을_입력하세요",
-            storageBucket: "여기에_값을_입력하세요",
-            messagingSenderId: "여기에_값을_입력하세요",
-            appId: "여기에_값을_입력하세요"
-        };
+        // 1. 파이어베이스 기능 함수들 (CDN에서 로드)
+        import { ref, set, get, onValue, update } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+        // 2. [핵심] 분리해둔 설정 파일에서 db 객체만 불러오기
+        import { db } from "./firebase-config.js";
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
