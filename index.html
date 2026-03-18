@@ -13,14 +13,14 @@
         }
         body { 
             font-family: 'Pretendard', sans-serif; background-color: var(--bg-color); color: var(--text-main);
-            text-align: center; margin: 0; padding: 50px 20px; display: flex; flex-direction: column; align-items: center;
+            text-align: center; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center;
         }
         .hidden { display: none !important; }
         .container { 
-            background-color: var(--card-bg); padding: 30px; width: 100%; max-width: 400px; 
-            margin-bottom: 20px; border-radius: 16px; border: 1px solid #333;
+            background-color: var(--card-bg); padding: 20px; width: 100%; max-width: 400px; 
+            margin-bottom: 20px; border-radius: 16px; border: 1px solid #333; box-sizing: border-box;
         }
-        h1 { color: var(--accent); margin-bottom: 10px; font-weight: 800; }
+        h1 { color: var(--accent); margin-bottom: 10px; font-weight: 800; font-size: 24px; }
         h3 { margin-top: 0; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
         input, button { margin: 8px 0; padding: 14px; width: 100%; border-radius: 8px; border: none; box-sizing: border-box; font-size: 16px; }
         input { background-color: #2c2c2c; color: var(--text-main); border: 1px solid #444; }
@@ -36,9 +36,20 @@
         .status-badge.ready { background-color: var(--success); color: #000; }
         #startGameBtn { background-color: #ff9800; color: #000; }
         
-        /* 게임 플레이 영역 전용 스타일 */
-        .role-box { border: 2px solid #555; padding: 20px; border-radius: 12px; background-color: #252525; margin-bottom: 15px;}
-        .secret-box { border: 1px dashed var(--danger); padding: 15px; border-radius: 12px; background-color: rgba(207, 102, 121, 0.05); }
+        /* [신규] 접이식 보안 패널 스타일 */
+        .role-summary-header {
+            background-color: #2c2c2c; padding: 15px; border-radius: 8px; cursor: pointer;
+            border: 1px solid #444; display: flex; justify-content: space-between; align-items: center;
+            user-select: none; /* 텍스트 선택 방지 */
+        }
+        .role-summary-header:active { background-color: #383838; }
+        .role-summary-content {
+            background-color: #1a1a1a; padding: 20px; border-radius: 0 0 8px 8px;
+            border: 1px solid #444; border-top: none; display: none; margin-bottom: 20px;
+        }
+        .role-summary-content.show { display: block; animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+        .secret-box { border: 1px dashed var(--danger); padding: 15px; border-radius: 12px; background-color: rgba(207, 102, 121, 0.05); margin-top: 15px;}
     </style>
 </head>
 <body>
@@ -54,7 +65,7 @@
 
     <div id="gameScreen" class="container hidden">
         <h3 id="roomTitle">방 코드: LOADING</h3>
-        <p>내 닉네임: <span id="myNickname" style="color: var(--accent); font-weight:bold;"></span></p>
+        <p style="margin-top:0;">내 닉네임: <span id="myNickname" style="color: var(--accent); font-weight:bold;"></span></p>
 
         <div id="waitingArea">
             <ul id="playerList"></ul>
@@ -63,28 +74,38 @@
         </div>
 
         <div id="playArea" class="hidden">
-            <h2 style="color: var(--accent);">🌙 밤 단계: 역할 확인</h2>
-            <div class="role-box">
-                <p style="margin:0 0 10px 0; color:#aaa;">당신의 정체는...</p>
-                <h1 id="myRoleDisplay" style="margin: 0; font-size: 28px;">로딩 중</h1>
-                <p id="roleDescription" style="font-size: 14px; margin-top: 10px;"></p>
-            </div>
             
-            <div id="secretInfoArea" class="secret-box hidden">
-                <h4 style="color: var(--danger); margin-top:0;">⚠️ 기밀 정보 (다른 사람에게 비밀 유지)</h4>
-                <ul id="secretInfoList" style="list-style: none; padding: 0; text-align: left; margin:0;"></ul>
+            <div id="myRolePanel" style="margin-bottom: 20px;">
+                <div class="role-summary-header" id="toggleRoleBtn">
+                    <span style="font-weight: bold;">🕵️ 내 정체 및 기밀 정보 확인</span>
+                    <span id="toggleIcon">▼</span>
+                </div>
+                <div class="role-summary-content" id="roleSummaryContent">
+                    <p style="margin:0 0 10px 0; color:#aaa;">당신의 정체는...</p>
+                    <h2 id="myRoleDisplay" style="margin: 0; font-size: 24px;">로딩 중</h2>
+                    <p id="roleDescription" style="font-size: 14px; margin-top: 10px; line-height: 1.4;"></p>
+                    
+                    <div id="secretInfoArea" class="secret-box hidden">
+                        <h4 style="color: var(--danger); margin-top:0; font-size: 14px;">⚠️ 기밀 정보 (절대 비밀 유지)</h4>
+                        <ul id="secretInfoList" style="list-style: none; padding: 0; text-align: left; margin:0; font-size: 14px;"></ul>
+                    </div>
+                </div>
             </div>
+
+            <div id="gameActionArea" style="border-top: 1px solid #333; padding-top: 20px;">
+                <h3 style="color: var(--accent); border-bottom: none; margin-bottom: 10px;">게임 진행</h3>
+                <p id="gameStatusText" style="font-size: 14px; color: #aaa;">모두 역할을 확인했습니다.<br>곧 원정대장 지목 단계가 시작됩니다.</p>
+                </div>
+
         </div>
 
         <button id="leaveRoomBtn" class="btn-danger" style="margin-top:20px;">방 나가기</button>
     </div>
 
     <script type="module">
-        // 모듈 분리된 설정 파일에서 db 객체만 가져오기
         import { db } from "./firebase-config.js";
         import { ref, set, get, onValue, update } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
-        // UI 요소
         const lobbyScreen = document.getElementById('lobbyScreen');
         const gameScreen = document.getElementById('gameScreen');
         const waitingArea = document.getElementById('waitingArea');
@@ -93,12 +114,23 @@
         const readyBtn = document.getElementById('readyBtn');
         const startGameBtn = document.getElementById('startGameBtn');
         
+        // 접이식 패널 UI 변수
+        const toggleRoleBtn = document.getElementById('toggleRoleBtn');
+        const roleSummaryContent = document.getElementById('roleSummaryContent');
+        const toggleIcon = document.getElementById('toggleIcon');
+        
         let currentRoomId = null;
         let myUserId = null;
         let isHost = false;
         let gameStateCleanup = null;
 
         const generateUserId = () => 'user_' + Math.random().toString(36).substr(2, 9);
+
+        // --- 패널 토글(열기/닫기) 이벤트 리스너 ---
+        toggleRoleBtn.addEventListener('click', () => {
+            roleSummaryContent.classList.toggle('show');
+            toggleIcon.innerText = roleSummaryContent.classList.contains('show') ? '▲' : '▼';
+        });
 
         // --- 세션 복구 ---
         window.onload = () => {
@@ -124,7 +156,6 @@
             document.getElementById('roomTitle').innerText = `방 코드: ${roomId}`;
             document.getElementById('myNickname').innerText = nickname;
 
-            // 1. 플레이어 목록 감시
             onValue(ref(db, `rooms/${roomId}/players`), (snapshot) => {
                 const playersData = snapshot.val();
                 if (!playersData) return;
@@ -168,7 +199,6 @@
                 }
             });
 
-            // 2. 게임 상태(gameState) 감시 - 이 부분이 핵심입니다.
             if(gameStateCleanup) gameStateCleanup();
             gameStateCleanup = onValue(ref(db, `rooms/${roomId}/gameState`), (snapshot) => {
                 const state = snapshot.val();
@@ -180,8 +210,8 @@
 
         // --- 화면 전환 및 역할 공개 로직 ---
         function transitionToGamePhase() {
-            waitingArea.classList.add('hidden'); // 대기실 UI 숨김
-            playArea.classList.remove('hidden'); // 플레이 영역 표시
+            waitingArea.classList.add('hidden'); 
+            playArea.classList.remove('hidden'); 
 
             get(ref(db, `rooms/${currentRoomId}/players/${myUserId}`)).then((snapshot) => {
                 const myRole = snapshot.val().role;
@@ -191,27 +221,27 @@
                 if (myRole === "Merlin") {
                     roleDisplay.innerText = "멀린 (선)";
                     roleDisplay.style.color = "var(--success)";
-                    roleDesc.innerText = "당신은 누가 악의 무리인지 알 수 있습니다.";
+                    roleDesc.innerText = "당신은 누가 악의 무리인지 알 수 있습니다. 단, 당신의 정체를 들키면 마지막에 암살당할 수 있으니 주의하세요.";
                     showSecretInfo("Merlin");
                 } else if (myRole === "Assassin") {
                     roleDisplay.innerText = "암살자 (악)";
                     roleDisplay.style.color = "var(--danger)";
-                    roleDesc.innerText = "당신은 다른 악의 무리를 압니다. 마지막에 멀린을 암살하세요.";
+                    roleDesc.innerText = "당신은 다른 악의 무리를 압니다. 게임이 선의 승리로 끝날 때, 멀린을 정확히 찾아내 암살하면 역전승합니다.";
                     showSecretInfo("Evil");
                 } else if (myRole === "Minion of Mordred") {
                     roleDisplay.innerText = "악의 무리 (악)";
                     roleDisplay.style.color = "var(--danger)";
-                    roleDesc.innerText = "당신은 다른 악의 무리가 누구인지 압니다.";
+                    roleDesc.innerText = "당신은 다른 악의 무리가 누구인지 압니다. 정체를 숨기고 원정에 참여하여 임무를 실패시키세요.";
                     showSecretInfo("Evil");
                 } else {
                     roleDisplay.innerText = "선량한 시민 (선)";
                     roleDisplay.style.color = "var(--success)";
-                    roleDesc.innerText = "당신은 아무 정보가 없습니다. 대화를 통해 악을 찾아내세요.";
+                    roleDesc.innerText = "당신은 아무 정보가 없습니다. 대화와 투표 결과를 통해 누가 악인지 추리하여 성공적으로 원정을 이끄세요.";
                 }
             });
         }
 
-        // --- 기밀 정보 표시 (멀린과 악의 무리에게만 보임) ---
+        // --- 기밀 정보 표시 ---
         function showSecretInfo(viewerType) {
             get(ref(db, `rooms/${currentRoomId}/players`)).then((snapshot) => {
                 const players = snapshot.val();
@@ -221,7 +251,7 @@
                 let hasInfo = false;
 
                 Object.entries(players).forEach(([id, player]) => {
-                    if (id === myUserId) return; // 자기 자신은 제외
+                    if (id === myUserId) return; 
                     const isEvil = player.role === "Assassin" || player.role === "Minion of Mordred";
                     
                     if (viewerType === "Merlin" && isEvil) {
@@ -273,7 +303,6 @@
             });
         });
 
-        // 게임 시작 및 역할 배분
         startGameBtn.addEventListener('click', () => {
             if (!isHost) return;
             get(ref(db, `rooms/${currentRoomId}/players`)).then((snapshot) => {
@@ -289,7 +318,7 @@
 
                 const updates = {};
                 playerIds.forEach((id, index) => updates[`rooms/${currentRoomId}/players/${id}/role`] = roles[index]);
-                updates[`rooms/${currentRoomId}/gameState`] = "playing"; // 상태 변경 -> 모든 클라이언트에서 화면 전환 트리거
+                updates[`rooms/${currentRoomId}/gameState`] = "playing"; 
 
                 update(ref(db), updates);
             });
