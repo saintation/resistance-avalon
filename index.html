@@ -154,6 +154,7 @@
         let myUserId = null;
         let isHost = false;
         let globalPlayersData = {}; 
+        let currentGameState = "lobby"; // [신규] 현재 게임 상태를 추적하는 변수
         let gameStateCleanup = null;
         let playDataCleanup = null;
 
@@ -188,6 +189,16 @@
                 });
             }
         };
+
+        // [신규] 데이터 동기화 타이밍 차이를 극복하기 위한 중앙 교차 검증 로직
+        function checkGamePhase() {
+            if (currentGameState === "team_building" && globalPlayersData[myUserId] && globalPlayersData[myUserId].role !== "pending") {
+                // 한 번만 전환 함수를 실행하도록 방어
+                if (playArea.classList.contains('hidden')) {
+                    transitionToGamePhase();
+                }
+            }
+        }
 
         function startRealtimeSync(roomId, nickname) {
             lobbyScreen.classList.add('hidden');
@@ -247,13 +258,16 @@
                     hostSettings.classList.add('hidden');
                     startGameBtn.classList.add('hidden');
                 }
+
+                // 플레이어 데이터가 업데이트 될 때마다 게임 시작 조건 충족 여부 재검증
+                checkGamePhase();
             });
 
             if(gameStateCleanup) gameStateCleanup();
             gameStateCleanup = onValue(ref(db, `rooms/${roomId}/gameState`), (snapshot) => {
-                const state = snapshot.val();
-                // 글로벌 데이터 로드 확인 및 방어
-                if (state === "team_building" && globalPlayersData[myUserId]) transitionToGamePhase();
+                currentGameState = snapshot.val();
+                // 게임 상태가 업데이트 될 때마다 조건 충족 여부 검증
+                checkGamePhase();
             });
 
             if(playDataCleanup) playDataCleanup();
