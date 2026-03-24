@@ -124,8 +124,8 @@
         let isHost = false;
         let gameStateCleanup = null;
 
-        const generateUserId = () => 'user_' + Math.random().toString(36).substr(2, 9);
-
+        const generateUserId = () => 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        
         // --- 패널 토글(열기/닫기) 이벤트 리스너 ---
         toggleRoleBtn.addEventListener('click', () => {
             roleSummaryContent.classList.toggle('show');
