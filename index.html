@@ -189,6 +189,7 @@
         let isHost = false;
         let globalPlayersData = {}; 
         let currentGameState = "lobby";
+        let currentPlayData = null;
         let gameStateCleanup = null;
         let playDataCleanup = null;
 
@@ -298,12 +299,14 @@
             gameStateCleanup = onValue(ref(db, `rooms/${roomId}/gameState`), (snapshot) => {
                 currentGameState = snapshot.val();
                 checkGamePhase();
+                // [수정] gameState가 업데이트될 때도 UI 재렌더링
+                if(currentPlayData && globalPlayersData[myUserId]) renderGamePhase(currentPlayData);
             });
 
             if(playDataCleanup) playDataCleanup();
             playDataCleanup = onValue(ref(db, `rooms/${roomId}/playData`), (snapshot) => {
-                const playData = snapshot.val();
-                if(playData && globalPlayersData[myUserId]) renderGamePhase(playData);
+                currentPlayData = snapshot.val(); // [수정] 최신 데이터 캐싱
+                if(currentPlayData && globalPlayersData[myUserId]) renderGamePhase(currentPlayData);
             });
         }
 
