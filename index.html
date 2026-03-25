@@ -527,8 +527,8 @@
         }
 
         function submitVote(voteType) {
-            update(ref(db, `rooms/${currentRoomId}/playData/teamVotes/${myUserId}`), voteType);
-        }
+    set(ref(db, `rooms/${currentRoomId}/playData/teamVotes/${myUserId}`), voteType);
+}
 
         function resolveTeamVoting(playData, votes, totalPlayers) {
             let approveCount = 0;
