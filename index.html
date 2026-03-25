@@ -22,9 +22,9 @@
         }
         h1 { color: var(--accent); margin-bottom: 10px; font-weight: 800; font-size: 24px; }
         h3 { margin-top: 0; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
-        input, button { margin: 8px 0; padding: 14px; width: 100%; border-radius: 8px; border: none; box-sizing: border-box; font-size: 16px; }
-        input { background-color: #2c2c2c; color: var(--text-main); border: 1px solid #444; }
-        input:focus { outline: 2px solid var(--accent); }
+        input, select, button { margin: 8px 0; padding: 14px; width: 100%; border-radius: 8px; border: none; box-sizing: border-box; font-size: 16px; }
+        input, select { background-color: #2c2c2c; color: var(--text-main); border: 1px solid #444; }
+        input:focus, select:focus { outline: 2px solid var(--accent); }
         button { cursor: pointer; font-weight: 600; }
         .btn-accent { background-color: var(--accent); color: #000; }
         .btn-ready { background-color: transparent; border: 2px solid var(--success); color: var(--success); }
@@ -52,7 +52,7 @@
         
         .checkbox-label { display: flex; align-items: center; padding: 10px; background: rgba(255,255,255,0.05); margin-bottom: 5px; border-radius: 6px; cursor: pointer; font-size: 14px;}
         .checkbox-label input { width: auto; margin-right: 10px; transform: scale(1.2); }
-        .quest-circle { width: 24px; height: 24px; border-radius: 50%; background: #333; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; border: 2px solid #555; transition: all 0.3s;}
+        .quest-circle { width: 24px; height: 24px; border-radius: 50%; background: #333; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; border: 2px solid #555; transition: all 0.3s; margin: 0 auto;}
         .quest-circle.active { border-color: var(--accent); background: rgba(187,134,252,0.2); color: var(--accent); box-shadow: 0 0 8px var(--accent); }
         
         #hostSettings { margin-bottom: 15px; text-align: left; background: rgba(255,152,0,0.1); border: 1px solid #ff9800; padding: 15px; border-radius: 8px; }
@@ -118,12 +118,21 @@
                     연속 부결 횟수: <span id="voteTrackCount">0</span>/5
                 </div>
 
-                <div id="questTracker" style="display:flex; justify-content:space-around; margin-bottom:15px;">
-                    <div class="quest-circle" id="quest1">1</div>
-                    <div class="quest-circle" id="quest2">2</div>
-                    <div class="quest-circle" id="quest3">3</div>
-                    <div class="quest-circle" id="quest4">4</div>
-                    <div class="quest-circle" id="quest5">5</div>
+                <div id="questTrackerContainer" style="margin-bottom:20px;">
+                    <div id="questTracker" style="display:flex; justify-content:space-around; margin-bottom:5px;">
+                        <div style="width:20%;"><div class="quest-circle" id="quest1">1</div></div>
+                        <div style="width:20%;"><div class="quest-circle" id="quest2">2</div></div>
+                        <div style="width:20%;"><div class="quest-circle" id="quest3">3</div></div>
+                        <div style="width:20%;"><div class="quest-circle" id="quest4">4</div></div>
+                        <div style="width:20%;"><div class="quest-circle" id="quest5">5</div></div>
+                    </div>
+                    <div id="questDetails" style="display:flex; justify-content:space-around; font-size:11px; font-weight:bold;">
+                        <div id="questDetail1" style="width:20%;"></div>
+                        <div id="questDetail2" style="width:20%;"></div>
+                        <div id="questDetail3" style="width:20%;"></div>
+                        <div id="questDetail4" style="width:20%;"></div>
+                        <div id="questDetail5" style="width:20%;"></div>
+                    </div>
                 </div>
 
                 <div id="leaderAnnouncement" style="padding: 10px; background: rgba(255,152,0,0.1); border: 1px solid #ff9800; border-radius: 8px; margin-bottom: 15px; color: #ff9800; font-weight:bold;">
@@ -171,7 +180,14 @@
 
                 <div id="assassinPhaseArea" class="hidden" style="margin-bottom: 15px; padding: 15px; border-radius: 8px; background: rgba(207, 102, 121, 0.1); border: 1px solid var(--danger);">
                     <h3 style="color: var(--danger); border-bottom: none; margin-bottom:5px;">🗡️ 암살자 단계</h3>
-                    <p style="font-size: 14px;">선 진영이 원정 3회를 성공시켰습니다.<br>이제 악 진영의 암살자가 멀린을 찾아낼 시간입니다.</p>
+                    <p style="font-size: 14px; margin-bottom: 15px;">선 진영이 원정 3회를 성공시켰습니다.<br>이제 악 진영의 암살자가 멀린을 찾아낼 시간입니다.</p>
+                    
+                    <div id="assassinActionUI" class="hidden">
+                        <select id="assassinTargetSelect">
+                            <option value="">멀린 지목 대상 선택</option>
+                        </select>
+                        <button id="btnAssassinate" class="btn-danger" style="margin-top:10px;">암살 실행</button>
+                    </div>
                 </div>
 
                 <div id="gameOverArea" class="hidden" style="margin-bottom: 15px; padding: 15px; border-radius: 8px; background: rgba(207, 102, 121, 0.1); border: 1px solid var(--danger);">
@@ -186,7 +202,7 @@
         <button id="leaveRoomBtn" class="btn-danger" style="margin-top:20px;">방 나가기</button>
     </div>
 
-    <div id="versionWatermark">v1.0.3</div>
+    <div id="versionWatermark">v1.0.4</div>
 
     <script type="module">
         import { db } from "./firebase-config.js";
@@ -412,11 +428,13 @@
             const totalPlayers = playData.playerOrder.length;
             const requiredSize = QUEST_CAPACITY[totalPlayers][currentQuestIndex];
 
-            // 퀘스트 트래커 색상 업데이트
+            // 퀘스트 트래커 색상 및 결과 상세 내역 렌더링
             const questResults = playData.questResults || [];
+            const questDetails = playData.questDetails || [];
+            
             for(let i=0; i<5; i++) {
                 const qCircle = document.getElementById(`quest${i+1}`);
-                qCircle.className = 'quest-circle'; // 상태 초기화
+                qCircle.className = 'quest-circle'; 
                 qCircle.style = ''; 
 
                 if (i === currentQuestIndex) qCircle.classList.add('active');
@@ -430,11 +448,17 @@
                     qCircle.style.color = '#fff';
                     qCircle.style.borderColor = 'var(--danger)';
                 }
+
+                const detailEl = document.getElementById(`questDetail${i+1}`);
+                if (questDetails[i]) {
+                    detailEl.innerHTML = `<span style="color:var(--success)">${questDetails[i].s}</span>/<span style="color:var(--danger)">${questDetails[i].f}</span>`;
+                } else {
+                    detailEl.innerHTML = '';
+                }
             }
 
             document.getElementById('leaderAnnouncement').innerText = `👑 현재 원정대장: ${leaderName}`;
 
-            // 모든 UI 숨김 처리 후 상태에 따라 필요한 것만 노출
             document.getElementById('teamSelectionArea').classList.add('hidden');
             document.getElementById('teamVotingArea').classList.add('hidden');
             document.getElementById('voteResultArea').classList.add('hidden');
@@ -447,16 +471,60 @@
 
             if (currentGameState === "game_over") {
                 document.getElementById('gameOverArea').classList.remove('hidden');
-                document.getElementById('gameOverReason').innerText = (playData.voteTrack >= 5) 
-                    ? "원정대 투표가 5회 연속 부결되었습니다. 악의 승리입니다!" 
-                    : (questResults.filter(r => r === 'fail').length >= 3) ? "원정 실패가 3회 누적되었습니다. 악의 승리입니다!" : "선 진영이 승리했습니다.";
+                let reasonText = "";
+                
+                if (playData.voteTrack >= 5) {
+                    reasonText = "원정대 투표가 5회 연속 부결되었습니다. 악의 승리입니다!";
+                } else if (questResults.filter(r => r === 'fail').length >= 3) {
+                    reasonText = "원정 실패가 3회 누적되었습니다. 악의 승리입니다!";
+                } else if (playData.assassinatedTarget) {
+                    const targetRole = globalPlayersData[playData.assassinatedTarget].role;
+                    const targetName = globalPlayersData[playData.assassinatedTarget].nickname;
+                    if (targetRole === "Merlin") {
+                        reasonText = `암살자가 멀린(${targetName})을 정확히 암살했습니다. 악의 역전승입니다!`;
+                    } else {
+                        reasonText = `암살자가 잘못된 대상(${targetName})을 암살했습니다. 선 진영의 최종 승리입니다!`;
+                    }
+                } else {
+                    reasonText = "진영 승리 조건이 달성되었습니다.";
+                }
+
+                document.getElementById('gameOverReason').innerText = reasonText;
                 statusText.innerText = "게임이 종료되었습니다.";
                 return;
             }
 
+            // [신규] 암살자 단계 처리 로직
             if (currentGameState === "assassin_phase") {
                 document.getElementById('assassinPhaseArea').classList.remove('hidden');
-                statusText.innerText = "암살자가 대상을 지정하고 있습니다...";
+                
+                if (globalPlayersData[myUserId].role === "Assassin") {
+                    document.getElementById('assassinActionUI').classList.remove('hidden');
+                    statusText.innerText = "당신은 암살자입니다. 멀린이라고 생각되는 플레이어를 선택하세요.";
+                    
+                    const targetSelect = document.getElementById('assassinTargetSelect');
+                    if (targetSelect.options.length <= 1) { // 최초 1회만 옵션 생성
+                        playData.playerOrder.forEach(id => {
+                            if (id !== myUserId) {
+                                targetSelect.innerHTML += `<option value="${id}">${globalPlayersData[id].nickname}</option>`;
+                            }
+                        });
+                    }
+
+                    document.getElementById('btnAssassinate').onclick = () => {
+                        const targetId = targetSelect.value;
+                        if (!targetId) return alert("대상을 선택하세요.");
+                        if (confirm(`정말로 ${globalPlayersData[targetId].nickname} 님을 암살하시겠습니까?`)) {
+                            const updates = {};
+                            updates[`rooms/${currentRoomId}/playData/assassinatedTarget`] = targetId;
+                            updates[`rooms/${currentRoomId}/gameState`] = "game_over";
+                            update(ref(db), updates);
+                        }
+                    };
+                } else {
+                    document.getElementById('assassinActionUI').classList.add('hidden');
+                    statusText.innerText = "암살자가 대상을 지정하고 있습니다...";
+                }
                 return;
             }
 
@@ -561,7 +629,6 @@
                     resultMsgEl.style.color = "var(--danger)";
                 }
             }
-            // [신규] 원정 임무 실행 단계
             else if (currentGameState === "quest_voting") {
                 const isParticipant = (playData.selectedTeam || []).includes(myUserId);
                 
@@ -571,7 +638,6 @@
                     const myRole = globalPlayersData[myUserId].role;
                     const isEvil = ["Assassin", "Morgana", "Mordred", "Oberon", "Minion of Mordred"].includes(myRole);
                     
-                    // 선 진영은 '성공'만 낼 수 있도록 강제
                     document.getElementById('btnQuestFail').style.display = isEvil ? 'block' : 'none';
 
                     const qVotes = playData.questVotes || {};
@@ -598,12 +664,10 @@
                 const qVotes = playData.questVotes || {};
                 const currentQuestVoteCount = Object.keys(qVotes).length;
                 
-                // 방장이 투표 집계 로직 처리
                 if (isHost && currentQuestVoteCount === requiredSize) {
                     resolveQuestVoting(playData, qVotes, requiredSize, totalPlayers);
                 }
             }
-            // [신규] 원정 결과 확인 단계
             else if (currentGameState === "quest_result") {
                 document.getElementById('questResultArea').classList.remove('hidden');
                 statusText.innerText = "방금 수행된 원정의 결과입니다.";
@@ -617,7 +681,6 @@
                 
                 summaryEl.innerHTML = `<span style="color:var(--success)">성공: ${sCount}개</span> / <span style="color:var(--danger)">실패: ${fCount}개</span>`;
 
-                // 4라운드 7인 이상 특수 룰 반영을 위해 결과 배열 참조
                 const isFailed = (questResults[currentQuestIndex] === 'fail');
                 
                 if (isFailed) {
@@ -639,7 +702,7 @@
             if (isApproved) {
                 updates[`rooms/${currentRoomId}/gameState`] = "quest_voting"; 
                 updates[`rooms/${currentRoomId}/playData/voteTrack`] = 0;
-                updates[`rooms/${currentRoomId}/playData/questVotes`] = null; // 퀘스트 투표 초기화
+                updates[`rooms/${currentRoomId}/playData/questVotes`] = null; 
             } else {
                 const newTrack = (playData.voteTrack || 0) + 1;
                 if (newTrack >= 5) {
@@ -654,14 +717,12 @@
             update(ref(db), updates);
         }
 
-        // [신규] 원정 임무 결과를 처리하고 DB에 기록하는 함수
         function resolveQuestVoting(playData, questVotes, requiredSize, totalPlayers) {
-            let failCount = 0;
-            Object.values(questVotes).forEach(v => { if (v === 'fail') failCount++; });
+            let successCount = 0; let failCount = 0;
+            Object.values(questVotes).forEach(v => { if (v === 'fail') failCount++; else successCount++; });
 
             const currentQuestIndex = playData.currentQuest || 0;
             let requiresTwoFails = false;
-            // 아발론 공식 룰: 7~10인 게임 시 4라운드는 실패가 2개 이상이어야 원정 실패
             if (totalPlayers >= 7 && currentQuestIndex === 3) {
                 requiresTwoFails = true;
             }
@@ -671,26 +732,29 @@
 
             const currentResults = playData.questResults || [];
             currentResults[currentQuestIndex] = questResult;
+            
+            // [수정] 원정 성공/실패 득표수를 별도로 저장
+            const currentDetails = playData.questDetails || [];
+            currentDetails[currentQuestIndex] = { s: successCount, f: failCount };
 
             const updates = {};
             updates[`rooms/${currentRoomId}/playData/questResults`] = currentResults;
+            updates[`rooms/${currentRoomId}/playData/questDetails`] = currentDetails;
             updates[`rooms/${currentRoomId}/gameState`] = "quest_result";
             update(ref(db), updates);
             
-            // 5초간 결과 화면 표시 후 라운드 갱신 처리
             setTimeout(() => processNextRound(currentResults, playData, totalPlayers), 5000);
         }
 
-        // [신규] 게임 승패 체크 및 다음 라운드 준비 함수
         function processNextRound(results, playData, totalPlayers) {
             let successCount = results.filter(r => r === 'success').length;
             let failCount = results.filter(r => r === 'fail').length;
 
             const updates = {};
             if (successCount >= 3) {
-                updates[`rooms/${currentRoomId}/gameState`] = "assassin_phase"; // 선 진영 승리 조건 달성 -> 암살자 단계
+                updates[`rooms/${currentRoomId}/gameState`] = "assassin_phase"; 
             } else if (failCount >= 3) {
-                updates[`rooms/${currentRoomId}/gameState`] = "game_over"; // 악 진영 최종 승리
+                updates[`rooms/${currentRoomId}/gameState`] = "game_over"; 
             } else {
                 updates[`rooms/${currentRoomId}/gameState`] = "team_building";
                 updates[`rooms/${currentRoomId}/playData/currentQuest`] = (playData.currentQuest || 0) + 1;
