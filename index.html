@@ -192,17 +192,24 @@
 
                 <div id="gameOverArea" class="hidden" style="margin-bottom: 15px; padding: 15px; border-radius: 8px; background: rgba(207, 102, 121, 0.1); border: 1px solid var(--danger);">
                     <h3 style="color: var(--danger); border-bottom: none; margin-bottom:5px;">게임 종료</h3>
-                    <p id="gameOverReason"></p>
+                    <p id="gameOverReason" style="font-weight:bold; margin-bottom:15px;"></p>
+                    
+                    <div id="finalRoleReveal" style="text-align:left; background:rgba(0,0,0,0.3); padding:15px; border-radius:8px; border: 1px solid #444;">
+                        <h4 style="margin-top:0; color:var(--accent); text-align:center;">전체 플레이어 정체</h4>
+                        <ul id="finalRoleList" style="list-style:none; padding:0; font-size:14px; margin:0; max-height:200px; overflow-y:auto;"></ul>
+                    </div>
+                    
+                    <button id="btnRestartGame" class="btn-accent hidden" style="margin-top:15px;">새 게임 준비 (대기실로 돌아가기)</button>
                 </div>
 
                 <p id="gameStatusText" style="font-size: 14px; color: #aaa;"></p>
             </div>
         </div>
 
-        <button id="leaveRoomBtn" class="btn-danger" style="margin-top:20px;">방 나가기</button>
+        <button id="leaveRoomBtn" class="btn-danger" style="margin-top:20px;">방 완전히 나가기</button>
     </div>
 
-    <div id="versionWatermark">v1.0.4</div>
+    <div id="versionWatermark">v1.0.5</div>
 
     <script type="module">
         import { db } from "./firebase-config.js";
@@ -269,6 +276,22 @@
             }
         }
 
+        // [신규] 방 폭파 없이 대기실 화면으로 되돌아가는 로직
+        function transitionToLobbyPhase() {
+            playArea.classList.add('hidden');
+            waitingArea.classList.remove('hidden');
+            document.getElementById('roleSummaryContent').classList.remove('show');
+            document.getElementById('toggleIcon').innerText = '▼';
+            document.getElementById('gameStatusText').innerText = '';
+            
+            // 퀘스트 트래커 초기화
+            for(let i=1; i<=5; i++) {
+                document.getElementById(`quest${i}`).className = 'quest-circle';
+                document.getElementById(`quest${i}`).style = '';
+                document.getElementById(`questDetail${i}`).innerHTML = '';
+            }
+        }
+
         function startRealtimeSync(roomId, nickname) {
             lobbyScreen.classList.add('hidden');
             gameScreen.classList.remove('hidden');
@@ -328,20 +351,25 @@
                     startGameBtn.classList.add('hidden');
                 }
 
-                checkGamePhase();
+                if (currentGameState === "lobby") transitionToLobbyPhase();
+                else checkGamePhase();
             });
 
             if(gameStateCleanup) gameStateCleanup();
             gameStateCleanup = onValue(ref(db, `rooms/${roomId}/gameState`), (snapshot) => {
                 currentGameState = snapshot.val();
-                checkGamePhase();
-                if(currentPlayData && globalPlayersData[myUserId]) renderGamePhase(currentPlayData);
+                if (currentGameState === "lobby") {
+                    transitionToLobbyPhase();
+                } else {
+                    checkGamePhase();
+                    if(currentPlayData && globalPlayersData[myUserId]) renderGamePhase(currentPlayData);
+                }
             });
 
             if(playDataCleanup) playDataCleanup();
             playDataCleanup = onValue(ref(db, `rooms/${roomId}/playData`), (snapshot) => {
                 currentPlayData = snapshot.val();
-                if(currentPlayData && globalPlayersData[myUserId]) renderGamePhase(currentPlayData);
+                if(currentPlayData && globalPlayersData[myUserId] && currentGameState !== "lobby") renderGamePhase(currentPlayData);
             });
         }
 
@@ -420,6 +448,8 @@
         }
 
         function renderGamePhase(playData) {
+            if (!playData || currentGameState === "lobby") return;
+
             document.getElementById('voteTrackCount').innerText = playData.voteTrack || 0;
 
             const currentQuestIndex = playData.currentQuest || 0;
@@ -428,7 +458,6 @@
             const totalPlayers = playData.playerOrder.length;
             const requiredSize = QUEST_CAPACITY[totalPlayers][currentQuestIndex];
 
-            // 퀘스트 트래커 색상 및 결과 상세 내역 렌더링
             const questResults = playData.questResults || [];
             const questDetails = playData.questDetails || [];
             
@@ -491,10 +520,34 @@
 
                 document.getElementById('gameOverReason').innerText = reasonText;
                 statusText.innerText = "게임이 종료되었습니다.";
+
+                // [신규] 모든 플레이어의 역할 렌더링
+                const roleListEl = document.getElementById('finalRoleList');
+                roleListEl.innerHTML = '';
+                Object.values(globalPlayersData).forEach(player => {
+                    const isEvil = ["Assassin", "Morgana", "Mordred", "Oberon", "Minion of Mordred"].includes(player.role);
+                    const nameColor = isEvil ? 'var(--danger)' : 'var(--success)';
+                    
+                    let displayRole = "아서왕의 충직한 신하";
+                    if(player.role === "Merlin") displayRole = "멀린";
+                    else if(player.role === "Percival") displayRole = "퍼시벌";
+                    else if(player.role === "Assassin") displayRole = "암살자";
+                    else if(player.role === "Morgana") displayRole = "모르가나";
+                    else if(player.role === "Mordred") displayRole = "모드레드";
+                    else if(player.role === "Oberon") displayRole = "오베론";
+                    else if(player.role === "Minion of Mordred") displayRole = "모드레드의 수하";
+
+                    roleListEl.innerHTML += `<li style="padding: 5px 0; border-bottom: 1px solid #555;">
+                        <span style="color:${nameColor}; font-weight:bold;">${player.nickname}</span> : ${displayRole}
+                    </li>`;
+                });
+
+                if (isHost) {
+                    document.getElementById('btnRestartGame').classList.remove('hidden');
+                }
                 return;
             }
 
-            // [신규] 암살자 단계 처리 로직
             if (currentGameState === "assassin_phase") {
                 document.getElementById('assassinPhaseArea').classList.remove('hidden');
                 
@@ -503,7 +556,7 @@
                     statusText.innerText = "당신은 암살자입니다. 멀린이라고 생각되는 플레이어를 선택하세요.";
                     
                     const targetSelect = document.getElementById('assassinTargetSelect');
-                    if (targetSelect.options.length <= 1) { // 최초 1회만 옵션 생성
+                    if (targetSelect.options.length <= 1) { 
                         playData.playerOrder.forEach(id => {
                             if (id !== myUserId) {
                                 targetSelect.innerHTML += `<option value="${id}">${globalPlayersData[id].nickname}</option>`;
@@ -733,7 +786,6 @@
             const currentResults = playData.questResults || [];
             currentResults[currentQuestIndex] = questResult;
             
-            // [수정] 원정 성공/실패 득표수를 별도로 저장
             const currentDetails = playData.questDetails || [];
             currentDetails[currentQuestIndex] = { s: successCount, f: failCount };
 
@@ -850,6 +902,19 @@
 
                 update(ref(db), updates);
             });
+        });
+
+        // [신규] 방장 전용 게임 재시작 통신
+        document.getElementById('btnRestartGame').addEventListener('click', () => {
+            if (!isHost) return;
+            const updates = {};
+            updates[`rooms/${currentRoomId}/gameState`] = "lobby";
+            updates[`rooms/${currentRoomId}/playData`] = null;
+            Object.keys(globalPlayersData).forEach(id => {
+                updates[`rooms/${currentRoomId}/players/${id}/isReady`] = false;
+                updates[`rooms/${currentRoomId}/players/${id}/role`] = "pending";
+            });
+            update(ref(db), updates);
         });
 
         document.getElementById('leaveRoomBtn').addEventListener('click', () => {
