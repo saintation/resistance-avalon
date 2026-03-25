@@ -57,15 +57,9 @@
         
         #hostSettings { margin-bottom: 15px; text-align: left; background: rgba(255,152,0,0.1); border: 1px solid #ff9800; padding: 15px; border-radius: 8px; }
         
-        /* 버전을 표시할 워터마크 스타일 */
         #versionWatermark {
-            position: fixed;
-            bottom: 10px;
-            right: 15px;
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.3);
-            pointer-events: none;
-            z-index: 9999;
+            position: fixed; bottom: 10px; right: 15px; font-size: 12px;
+            color: rgba(255, 255, 255, 0.3); pointer-events: none; z-index: 9999;
         }
     </style>
 </head>
@@ -120,6 +114,10 @@
             <div id="gameActionArea" style="border-top: 1px solid #333; padding-top: 20px;">
                 <h3 style="color: var(--accent); border-bottom: none; margin-bottom: 15px;">진행 상황</h3>
                 
+                <div style="font-size: 12px; color: var(--danger); margin-bottom: 10px; font-weight:bold;">
+                    연속 부결 횟수: <span id="voteTrackCount">0</span>/5
+                </div>
+
                 <div id="questTracker" style="display:flex; justify-content:space-around; margin-bottom:15px;">
                     <div class="quest-circle" id="quest1">1</div>
                     <div class="quest-circle" id="quest2">2</div>
@@ -138,6 +136,29 @@
                     <button id="submitTeamBtn" class="btn-accent" disabled>원정대 구성 완료</button>
                 </div>
 
+                <div id="teamVotingArea" class="hidden" style="margin-bottom: 15px; border: 1px solid #444; padding: 15px; border-radius: 8px;">
+                    <h4 style="color: var(--accent); margin-top:0;">🗳️ 원정대 찬반 투표</h4>
+                    <p style="font-size: 14px; margin-bottom:5px;">원정대장 <b id="votingLeaderName"></b>님이 제안한 원정대:</p>
+                    <ul id="proposedTeamList" style="list-style:none; padding:10px; background: rgba(0,0,0,0.3); border-radius:6px; font-weight:bold; color:var(--success);"></ul>
+                    
+                    <div id="voteButtons" style="display:flex; gap:10px; margin-top:15px;">
+                        <button id="btnApprove" class="btn-ready" style="flex:1;">찬성</button>
+                        <button id="btnReject" class="btn-danger" style="flex:1;">반대</button>
+                    </div>
+                    <p id="votingStatus" style="font-size: 14px; color: #aaa; margin-top:10px;"></p>
+                </div>
+
+                <div id="voteResultArea" class="hidden" style="margin-bottom: 15px; padding: 15px; border-radius: 8px; background: rgba(255,255,255,0.05);">
+                    <h4 style="margin-top:0;" id="voteResultTitle">투표 결과</h4>
+                    <ul id="voteResultList" style="list-style:none; padding:0; font-size:14px; text-align:left; max-height: 150px; overflow-y: auto;"></ul>
+                    <p id="voteResultMessage" style="font-weight:bold; margin-top:10px;"></p>
+                </div>
+
+                <div id="gameOverArea" class="hidden" style="margin-bottom: 15px; padding: 15px; border-radius: 8px; background: rgba(207, 102, 121, 0.1); border: 1px solid var(--danger);">
+                    <h3 style="color: var(--danger); border-bottom: none; margin-bottom:5px;">게임 종료</h3>
+                    <p id="gameOverReason"></p>
+                </div>
+
                 <p id="gameStatusText" style="font-size: 14px; color: #aaa;"></p>
             </div>
         </div>
@@ -145,7 +166,7 @@
         <button id="leaveRoomBtn" class="btn-danger" style="margin-top:20px;">방 나가기</button>
     </div>
 
-    <div id="versionWatermark">v1.0.1</div>
+    <div id="versionWatermark">v1.0.2</div>
 
     <script type="module">
         import { db } from "./firebase-config.js";
@@ -204,7 +225,7 @@
         };
 
         function checkGamePhase() {
-            if (currentGameState === "team_building" && globalPlayersData[myUserId] && globalPlayersData[myUserId].role !== "pending") {
+            if (currentGameState !== "lobby" && globalPlayersData[myUserId] && globalPlayersData[myUserId].role !== "pending") {
                 if (playArea.classList.contains('hidden')) {
                     transitionToGamePhase();
                 }
@@ -361,7 +382,9 @@
         }
 
         function renderGamePhase(playData) {
-            const currentQuestIndex = playData.currentQuest;
+            document.getElementById('voteTrackCount').innerText = playData.voteTrack || 0;
+
+            const currentQuestIndex = playData.currentQuest || 0;
             const leaderId = playData.playerOrder[playData.leaderIndex];
             const leaderName = globalPlayersData[leaderId] ? globalPlayersData[leaderId].nickname : "알 수 없음";
             const totalPlayers = playData.playerOrder.length;
@@ -376,46 +399,155 @@
             document.getElementById('leaderAnnouncement').innerText = `👑 현재 원정대장: ${leaderName}`;
 
             const teamSelectionArea = document.getElementById('teamSelectionArea');
-            const teamCheckboxes = document.getElementById('teamCheckboxes');
-            const submitTeamBtn = document.getElementById('submitTeamBtn');
+            const teamVotingArea = document.getElementById('teamVotingArea');
+            const voteResultArea = document.getElementById('voteResultArea');
+            const gameOverArea = document.getElementById('gameOverArea');
             const statusText = document.getElementById('gameStatusText');
 
-            if (myUserId === leaderId) {
-                teamSelectionArea.classList.remove('hidden');
-                document.getElementById('requiredTeamSize').innerText = requiredSize;
-                statusText.innerText = "당신이 원정대장입니다. 원정대원을 구성해주세요.";
-                
-                teamCheckboxes.innerHTML = '';
-                playData.playerOrder.forEach(id => {
-                    if (!globalPlayersData[id]) return;
-                    const label = document.createElement('label');
-                    label.className = 'checkbox-label';
-                    label.innerHTML = `<input type="checkbox" value="${id}" class="team-cb"> ${globalPlayersData[id].nickname}`;
+            // UI 영역 초기화
+            teamSelectionArea.classList.add('hidden');
+            teamVotingArea.classList.add('hidden');
+            voteResultArea.classList.add('hidden');
+            gameOverArea.classList.add('hidden');
+
+            if (currentGameState === "game_over") {
+                gameOverArea.classList.remove('hidden');
+                document.getElementById('gameOverReason').innerText = (playData.voteTrack >= 5) 
+                    ? "원정대 투표가 5회 연속 부결되었습니다. 악의 승리입니다!" 
+                    : "진영 승리 조건이 달성되었습니다.";
+                statusText.innerText = "게임이 종료되었습니다.";
+                return;
+            }
+
+            if (currentGameState === "team_building") {
+                if (myUserId === leaderId) {
+                    teamSelectionArea.classList.remove('hidden');
+                    document.getElementById('requiredTeamSize').innerText = requiredSize;
+                    statusText.innerText = "당신이 원정대장입니다. 원정대원을 구성해주세요.";
                     
-                    label.querySelector('input').addEventListener('change', () => {
-                        const checked = document.querySelectorAll('.team-cb:checked');
-                        submitTeamBtn.disabled = checked.length !== requiredSize;
-                        if(checked.length > requiredSize) {
-                            label.querySelector('input').checked = false;
-                            submitTeamBtn.disabled = document.querySelectorAll('.team-cb:checked').length !== requiredSize;
-                        }
+                    const teamCheckboxes = document.getElementById('teamCheckboxes');
+                    const submitTeamBtn = document.getElementById('submitTeamBtn');
+                    teamCheckboxes.innerHTML = '';
+                    
+                    playData.playerOrder.forEach(id => {
+                        if (!globalPlayersData[id]) return;
+                        const label = document.createElement('label');
+                        label.className = 'checkbox-label';
+                        label.innerHTML = `<input type="checkbox" value="${id}" class="team-cb"> ${globalPlayersData[id].nickname}`;
+                        
+                        label.querySelector('input').addEventListener('change', () => {
+                            const checked = document.querySelectorAll('.team-cb:checked');
+                            submitTeamBtn.disabled = checked.length !== requiredSize;
+                            if(checked.length > requiredSize) {
+                                label.querySelector('input').checked = false;
+                                submitTeamBtn.disabled = document.querySelectorAll('.team-cb:checked').length !== requiredSize;
+                            }
+                        });
+                        teamCheckboxes.appendChild(label);
                     });
-                    teamCheckboxes.appendChild(label);
+
+                    submitTeamBtn.onclick = () => {
+                        const selectedIds = Array.from(document.querySelectorAll('.team-cb:checked')).map(cb => cb.value);
+                        if(selectedIds.length === requiredSize) {
+                            const updates = {};
+                            updates[`rooms/${currentRoomId}/playData/selectedTeam`] = selectedIds;
+                            updates[`rooms/${currentRoomId}/playData/teamVotes`] = null; // 이전 투표 초기화
+                            updates[`rooms/${currentRoomId}/gameState`] = "team_voting"; 
+                            update(ref(db), updates);
+                        }
+                    };
+                } else {
+                    statusText.innerHTML = `원정대장 <b>${leaderName}</b>님이 원정대를 구성하고 있습니다...<br>토론을 통해 의견을 나누세요.`;
+                }
+            } 
+            else if (currentGameState === "team_voting") {
+                teamVotingArea.classList.remove('hidden');
+                document.getElementById('votingLeaderName').innerText = leaderName;
+                
+                const proposedTeamList = document.getElementById('proposedTeamList');
+                proposedTeamList.innerHTML = '';
+                (playData.selectedTeam || []).forEach(id => {
+                    proposedTeamList.innerHTML += `<li>${globalPlayersData[id].nickname}</li>`;
                 });
 
-                submitTeamBtn.onclick = () => {
-                    const selectedIds = Array.from(document.querySelectorAll('.team-cb:checked')).map(cb => cb.value);
-                    if(selectedIds.length === requiredSize) {
-                        const updates = {};
-                        updates[`rooms/${currentRoomId}/playData/selectedTeam`] = selectedIds;
-                        updates[`rooms/${currentRoomId}/gameState`] = "team_voting"; 
-                        update(ref(db), updates);
-                    }
-                };
-            } else {
-                teamSelectionArea.classList.add('hidden');
-                statusText.innerHTML = `원정대장 <b>${leaderName}</b>님이 원정대를 구성하고 있습니다...<br>토론을 통해 의견을 나누세요.`;
+                const votes = playData.teamVotes || {};
+                const currentVoteCount = Object.keys(votes).length;
+                document.getElementById('votingStatus').innerText = `투표 현황: ${currentVoteCount} / ${totalPlayers} 명 완료`;
+
+                const btnApprove = document.getElementById('btnApprove');
+                const btnReject = document.getElementById('btnReject');
+
+                if (votes[myUserId]) {
+                    btnApprove.disabled = true; btnReject.disabled = true;
+                    btnApprove.style.opacity = 0.5; btnReject.style.opacity = 0.5;
+                    statusText.innerText = "다른 플레이어들의 투표를 기다리고 있습니다.";
+                } else {
+                    btnApprove.disabled = false; btnReject.disabled = false;
+                    btnApprove.style.opacity = 1; btnReject.style.opacity = 1;
+                    statusText.innerText = "제안된 원정대에 찬성 또는 반대를 선택하세요.";
+                    
+                    btnApprove.onclick = () => submitVote('approve');
+                    btnReject.onclick = () => submitVote('reject');
+                }
+
+                // 방장이 투표 집계 로직을 처리 (경합 조건 방지)
+                if (isHost && currentVoteCount === totalPlayers) {
+                    update(ref(db, `rooms/${currentRoomId}`), { gameState: "team_voting_result" });
+                    setTimeout(() => resolveTeamVoting(playData, votes, totalPlayers), 4000);
+                }
             }
+            else if (currentGameState === "team_voting_result") {
+                voteResultArea.classList.remove('hidden');
+                statusText.innerText = "투표 결과를 확인 중입니다...";
+                
+                const votes = playData.teamVotes || {};
+                const voteResultList = document.getElementById('voteResultList');
+                voteResultList.innerHTML = '';
+                let approveCount = 0;
+
+                Object.entries(votes).forEach(([id, v]) => {
+                    if (v === 'approve') approveCount++;
+                    const voteText = v === 'approve' ? '🟢 찬성' : '🔴 반대';
+                    voteResultList.innerHTML += `<li>${globalPlayersData[id].nickname}: ${voteText}</li>`;
+                });
+
+                const isApproved = approveCount > (totalPlayers / 2);
+                const resultMsgEl = document.getElementById('voteResultMessage');
+                if (isApproved) {
+                    resultMsgEl.innerText = "원정대가 가결되었습니다! (원정 진행 대기중...)";
+                    resultMsgEl.style.color = "var(--success)";
+                } else {
+                    resultMsgEl.innerText = "원정대가 부결되었습니다. (다음 원정대장으로 넘어갑니다...)";
+                    resultMsgEl.style.color = "var(--danger)";
+                }
+            }
+        }
+
+        function submitVote(voteType) {
+            update(ref(db, `rooms/${currentRoomId}/playData/teamVotes/${myUserId}`), voteType);
+        }
+
+        function resolveTeamVoting(playData, votes, totalPlayers) {
+            let approveCount = 0;
+            Object.values(votes).forEach(v => { if (v === 'approve') approveCount++; });
+            const isApproved = approveCount > (totalPlayers / 2);
+
+            const updates = {};
+            if (isApproved) {
+                updates[`rooms/${currentRoomId}/gameState`] = "quest_voting"; // 다음 개발 단계
+                updates[`rooms/${currentRoomId}/playData/voteTrack`] = 0;
+            } else {
+                const newTrack = (playData.voteTrack || 0) + 1;
+                if (newTrack >= 5) {
+                    updates[`rooms/${currentRoomId}/gameState`] = "game_over";
+                } else {
+                    updates[`rooms/${currentRoomId}/gameState`] = "team_building";
+                    updates[`rooms/${currentRoomId}/playData/leaderIndex`] = (playData.leaderIndex + 1) % totalPlayers;
+                    updates[`rooms/${currentRoomId}/playData/voteTrack`] = newTrack;
+                }
+            }
+            updates[`rooms/${currentRoomId}/playData/teamVotes`] = null; // 초기화
+            update(ref(db), updates);
         }
 
         function joinRoomLogic(roomId, nickname) {
