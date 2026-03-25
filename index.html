@@ -34,6 +34,11 @@
         .player-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background-color: rgba(255,255,255,0.05); margin-bottom: 8px; border-radius: 8px; }
         .status-badge { font-size: 12px; padding: 4px 8px; border-radius: 4px; background-color: #444; color: #aaa; }
         .status-badge.ready { background-color: var(--success); color: #000; }
+        
+        /* [신규] 오프라인 상태 뱃지 스타일 */
+        .status-badge.offline { background-color: transparent; color: var(--danger); border: 1px dashed var(--danger); }
+        .player-item.offline-row { opacity: 0.5; }
+
         #startGameBtn { background-color: #ff9800; color: #000; }
         
         .role-summary-header {
@@ -209,11 +214,11 @@
         <button id="leaveRoomBtn" class="btn-danger" style="margin-top:20px;">방 완전히 나가기</button>
     </div>
 
-    <div id="versionWatermark">v1.0.5</div>
+    <div id="versionWatermark">v1.0.6</div>
 
     <script type="module">
         import { db } from "./firebase-config.js";
-        import { ref, set, get, onValue, update } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+        import { ref, set, get, onValue, update, onDisconnect } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
         const lobbyScreen = document.getElementById('lobbyScreen');
         const gameScreen = document.getElementById('gameScreen');
@@ -252,6 +257,7 @@
             toggleIcon.innerText = roleSummaryContent.classList.contains('show') ? '▲' : '▼';
         });
 
+        // [핵심 변경] 브라우저 로딩 시 로컬스토리지를 검증하여 즉시 세션 복구 및 온라인 상태 전송
         window.onload = () => {
             const savedSession = localStorage.getItem('avalon_session');
             if (savedSession) {
@@ -276,7 +282,6 @@
             }
         }
 
-        // [신규] 방 폭파 없이 대기실 화면으로 되돌아가는 로직
         function transitionToLobbyPhase() {
             playArea.classList.add('hidden');
             waitingArea.classList.remove('hidden');
@@ -284,7 +289,6 @@
             document.getElementById('toggleIcon').innerText = '▼';
             document.getElementById('gameStatusText').innerText = '';
             
-            // 퀘스트 트래커 초기화
             for(let i=1; i<=5; i++) {
                 document.getElementById(`quest${i}`).className = 'quest-circle';
                 document.getElementById(`quest${i}`).style = '';
@@ -297,6 +301,17 @@
             gameScreen.classList.remove('hidden');
             document.getElementById('roomTitle').innerText = `방 코드: ${roomId}`;
             document.getElementById('myNickname').innerText = nickname;
+
+            // [신규] 파이어베이스 연결 상태 모니터링을 통한 자동 오프라인 처리
+            const connectedRef = ref(db, '.info/connected');
+            const myOnlineRef = ref(db, `rooms/${roomId}/players/${myUserId}/isOnline`);
+            
+            onValue(connectedRef, (snap) => {
+                if (snap.val() === true) {
+                    onDisconnect(myOnlineRef).set(false);
+                    set(myOnlineRef, true);
+                }
+            });
 
             onValue(ref(db, `rooms/${roomId}/players`), (snapshot) => {
                 globalPlayersData = snapshot.val();
@@ -312,15 +327,25 @@
 
                 Object.entries(globalPlayersData).forEach(([userId, player]) => {
                     playerCount++;
-                    if (player.isReady) readyCount++;
+                    if (player.isReady && player.isOnline !== false) readyCount++;
 
                     const li = document.createElement('li');
-                    li.className = 'player-item';
                     
                     const isCurrentHost = (userId === firstPlayerId);
                     const hostMarker = isCurrentHost ? '<span style="color:#ff9800; margin-right:5px;">★</span>' : '';
-                    const statusClass = player.isReady ? 'ready' : '';
-                    const statusText = player.isReady ? '준비 완료' : '대기 중';
+                    
+                    // [신규] 접속 유실(오프라인) 상태에 따른 UI 차등 적용
+                    let statusClass = '';
+                    let statusText = '';
+                    if (player.isOnline === false) {
+                        li.className = 'player-item offline-row';
+                        statusClass = 'offline';
+                        statusText = '오프라인 (연결 끊김)';
+                    } else {
+                        li.className = 'player-item';
+                        statusClass = player.isReady ? 'ready' : '';
+                        statusText = player.isReady ? '준비 완료' : '대기 중';
+                    }
 
                     li.innerHTML = `<span class="player-name">${hostMarker}${player.nickname}</span><span class="status-badge ${statusClass}">${statusText}</span>`;
                     playerListUI.appendChild(li);
@@ -337,13 +362,16 @@
                 if (isHost) {
                     hostSettings.classList.remove('hidden');
                     startGameBtn.classList.remove('hidden');
-                    if (playerCount >= 5 && playerCount <= 10 && readyCount === playerCount) {
+                    // 오프라인 유저가 있으면 시작 불가
+                    const allOnline = Object.values(globalPlayersData).every(p => p.isOnline !== false);
+                    
+                    if (playerCount >= 5 && playerCount <= 10 && readyCount === playerCount && allOnline) {
                         startGameBtn.disabled = false;
                         startGameBtn.innerText = `게임 시작 (${playerCount}명)`;
                         startGameBtn.style.opacity = 1;
                     } else {
                         startGameBtn.disabled = true;
-                        startGameBtn.innerText = `시작 대기 (${playerCount}/5~10명 준비)`;
+                        startGameBtn.innerText = allOnline ? `시작 대기 (${playerCount}/5~10명 준비)` : "접속 대기 중...";
                         startGameBtn.style.opacity = 0.5;
                     }
                 } else {
@@ -521,7 +549,6 @@
                 document.getElementById('gameOverReason').innerText = reasonText;
                 statusText.innerText = "게임이 종료되었습니다.";
 
-                // [신규] 모든 플레이어의 역할 렌더링
                 const roleListEl = document.getElementById('finalRoleList');
                 roleListEl.innerHTML = '';
                 Object.values(globalPlayersData).forEach(player => {
@@ -821,7 +848,8 @@
         function joinRoomLogic(roomId, nickname) {
             myUserId = generateUserId();
             currentRoomId = roomId;
-            set(ref(db, `rooms/${roomId}/players/${myUserId}`), { nickname: nickname, isReady: false, role: "pending" }).then(() => {
+            // [신규] 최초 접속 시 isOnline 상태 추가
+            set(ref(db, `rooms/${roomId}/players/${myUserId}`), { nickname: nickname, isReady: false, role: "pending", isOnline: true }).then(() => {
                 localStorage.setItem('avalon_session', JSON.stringify({ roomId, userId: myUserId, nickname }));
                 startRealtimeSync(roomId, nickname);
             });
@@ -904,7 +932,6 @@
             });
         });
 
-        // [신규] 방장 전용 게임 재시작 통신
         document.getElementById('btnRestartGame').addEventListener('click', () => {
             if (!isHost) return;
             const updates = {};
@@ -918,7 +945,7 @@
         });
 
         document.getElementById('leaveRoomBtn').addEventListener('click', () => {
-            if (confirm("방을 나가시겠습니까?")) {
+            if (confirm("방을 완전히 나가시겠습니까?")) {
                 set(ref(db, `rooms/${currentRoomId}/players/${myUserId}`), null).then(() => {
                     localStorage.removeItem('avalon_session'); location.reload();
                 });
