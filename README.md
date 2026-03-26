@@ -1,6 +1,6 @@
 # 🗡️ 레지스탕스 아발론: 온라인 (The Resistance: Avalon Online)
 
-오프라인 마피아 류 보드게임인 **레지스탕스 아발론(The Resistance: Avalon)**을 브라우저 환경에서 5~10인의 플레이어가 실시간으로 즐길 수 있도록 구현한 웹 애플리케이션입니다. 별도의 서버 구축 없이 Firebase Realtime Database를 활용하여 플레이어 간의 상태 동기화와 게임 로직을 순수 클라이언트 환경에서 처리합니다.
+오프라인 마피아 류 보드게임인 **레지스탕스 아발론(The Resistance: Avalon)** 을 브라우저 환경에서 5~10인의 플레이어가 실시간으로 즐길 수 있도록 구현한 웹 애플리케이션입니다. 별도의 서버 구축 없이 Firebase Realtime Database를 활용하여 플레이어 간의 상태 동기화와 게임 로직을 순수 클라이언트 환경에서 처리합니다.
 
 ## 📌 주요 기능 (Key Features)
 
