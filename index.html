@@ -61,6 +61,12 @@
         
         #hostSettings { margin-bottom: 15px; text-align: left; background: rgba(255,152,0,0.1); border: 1px solid #ff9800; padding: 15px; border-radius: 8px; }
         
+        /* [신규] 추천 뱃지 스타일 */
+        .rec-badge { 
+            font-size: 11px; background-color: var(--success); color: #000; 
+            padding: 2px 6px; border-radius: 4px; margin-left: auto; font-weight: bold; display: none; 
+        }
+
         #versionWatermark {
             position: fixed; bottom: 10px; right: 15px; font-size: 12px;
             color: rgba(255, 255, 255, 0.3); pointer-events: none; z-index: 9999;
@@ -91,10 +97,11 @@
             
             <div id="hostSettings" class="hidden">
                 <h4 style="margin-top: 0; color: #ff9800; margin-bottom: 10px;">👑 방장 특수 직업 설정</h4>
-                <label class="checkbox-label"><input type="checkbox" id="cbPercival"> 퍼시벌 (아서왕의 수하)</label>
-                <label class="checkbox-label"><input type="checkbox" id="cbMorgana"> 모르가나 (모드레드의 수하)</label>
-                <label class="checkbox-label"><input type="checkbox" id="cbMordred"> 모드레드 (모드레드의 수하)</label>
-                <label class="checkbox-label"><input type="checkbox" id="cbOberon"> 오베론 (모드레드의 수하)</label>
+                <p id="recInfoText" style="font-size: 12px; color: #aaa; margin-top: 0; margin-bottom: 10px;">현재 인원에 맞는 추천 직업이 표시됩니다.</p>
+                <label class="checkbox-label"><input type="checkbox" id="cbPercival"> 퍼시벌 (아서왕의 수하) <span id="recPercival" class="rec-badge">추천</span></label>
+                <label class="checkbox-label"><input type="checkbox" id="cbMorgana"> 모르가나 (모드레드의 수하) <span id="recMorgana" class="rec-badge">추천</span></label>
+                <label class="checkbox-label"><input type="checkbox" id="cbMordred"> 모드레드 (모드레드의 수하) <span id="recMordred" class="rec-badge">추천</span></label>
+                <label class="checkbox-label"><input type="checkbox" id="cbOberon"> 오베론 (모드레드의 수하) <span id="recOberon" class="rec-badge">추천</span></label>
             </div>
 
             <button id="readyBtn" class="btn-ready">준비하기</button>
@@ -217,12 +224,12 @@
         <button id="leaveRoomBtn" class="btn-danger" style="margin-top:20px;">방 완전히 나가기</button>
     </div>
 
-    <div id="versionWatermark">v1.0.1</div>
+    <div id="versionWatermark">v1.0.2</div>
 
     <script type="module">
         import { db } from "./firebase-config.js";
         import { ref, set, get, onValue, update, onDisconnect, query, orderByChild, endAt } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
-        
+
         const lobbyScreen = document.getElementById('lobbyScreen');
         const gameScreen = document.getElementById('gameScreen');
         const waitingArea = document.getElementById('waitingArea');
@@ -262,10 +269,8 @@
 
         function cleanupOldRooms() {
             const ONE_DAY = 24 * 60 * 60 * 1000;
-            // 현재 시간 기준으로 정확히 24시간 이전의 타임스탬프 계산
             const cutoffTime = Date.now() - ONE_DAY;
             
-            // 파이어베이스 서버에 'createdAt' 기준으로 'cutoffTime' 이전의 방들만 달라고 요청
             const oldRoomsQuery = query(ref(db, 'rooms'), orderByChild('createdAt'), endAt(cutoffTime));
             
             get(oldRoomsQuery).then((snapshot) => {
@@ -274,7 +279,6 @@
                     snapshot.forEach((child) => {
                         updates[`rooms/${child.key}`] = null;
                     });
-                    // 조건에 맞는 낡은 방들을 한 번의 통신으로 일괄 삭제
                     if (Object.keys(updates).length > 0) {
                         update(ref(db), updates).catch(() => {});
                     }
@@ -388,6 +392,32 @@
                     startGameBtn.classList.remove('hidden');
                     const allOnline = Object.values(globalPlayersData).every(p => p.isOnline !== false);
                     
+                    // [신규] 인원수별 추천 직업 표시 로직
+                    const recPercival = document.getElementById('recPercival');
+                    const recMorgana = document.getElementById('recMorgana');
+                    const recMordred = document.getElementById('recMordred');
+                    const recOberon = document.getElementById('recOberon');
+                    
+                    [recPercival, recMorgana, recMordred, recOberon].forEach(el => el.style.display = 'none');
+
+                    if (playerCount >= 5 && playerCount <= 6) {
+                        recPercival.style.display = 'inline-block';
+                        recMorgana.style.display = 'inline-block';
+                    } else if (playerCount === 7) {
+                        recPercival.style.display = 'inline-block';
+                        recMorgana.style.display = 'inline-block';
+                        recOberon.style.display = 'inline-block';
+                    } else if (playerCount >= 8 && playerCount <= 9) {
+                        recPercival.style.display = 'inline-block';
+                        recMorgana.style.display = 'inline-block';
+                        recMordred.style.display = 'inline-block';
+                    } else if (playerCount === 10) {
+                        recPercival.style.display = 'inline-block';
+                        recMorgana.style.display = 'inline-block';
+                        recMordred.style.display = 'inline-block';
+                        recOberon.style.display = 'inline-block';
+                    }
+
                     if (playerCount >= 5 && playerCount <= 10 && readyCount === playerCount && allOnline) {
                         startGameBtn.disabled = false;
                         startGameBtn.innerText = `게임 시작 (${playerCount}명)`;
@@ -545,7 +575,6 @@
                 }
             }
 
-            // [신규] 원정대장 순서를 현재 대장(leaderIndex) 기준으로 회전시켜 항상 첫 번째로 렌더링
             const leaderIdx = playData.leaderIndex || 0;
             const orderedPlayers = [
                 ...playData.playerOrder.slice(leaderIdx),
@@ -581,7 +610,6 @@
                 document.getElementById('gameOverArea').classList.remove('hidden');
                 let reasonText = "";
                 
-                // [수정] 명확한 승패 텍스트 반영
                 if (playData.voteTrack >= 5) {
                     reasonText = "원정대 투표가 5회 연속 부결되었습니다. 악 진영이 최종 승리했습니다!";
                 } else if (questResults.filter(r => r === 'fail').length >= 3) {
@@ -840,7 +868,6 @@
                 updates[`rooms/${currentRoomId}/playData/questVotes`] = null; 
             } else {
                 const newTrack = (playData.voteTrack || 0) + 1;
-                // [수정] 5연속 부결 시 voteTrack 데이터를 정상적으로 5로 업데이트하여 명확한 종료 사유 출력
                 if (newTrack >= 5) {
                     updates[`rooms/${currentRoomId}/gameState`] = "game_over";
                     updates[`rooms/${currentRoomId}/playData/voteTrack`] = newTrack;
