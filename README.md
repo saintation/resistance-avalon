@@ -72,5 +72,5 @@
 
 ---
 
-**📜 라이선스 (License)
+## 📜 라이선스 (License)
 이 프로젝트는 오픈 소스로 제공되며 MIT License를 따릅니다. 단, 'The Resistance: Avalon'의 게임 규칙 및 원작의 상표권은 원작자(Indie Boards & Cards)에게 있습니다. 이 소프트웨어는 상업적 목적으로 사용될 수 없으며, 개인적인 친목 및 스터디 용도로만 활용되어야 합니다.
