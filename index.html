@@ -261,22 +261,26 @@
         });
 
         function cleanupOldRooms() {
-    const ONE_DAY = 24 * 60 * 60 * 1000;
-    const cutoffTime = Date.now() - ONE_DAY;
-    
-    // 24시간이 지난 방만 서버에 요청하여 대역폭 낭비 방지
-    const oldRoomsQuery = query(ref(db, 'rooms'), orderByChild('createdAt'), endAt(cutoffTime));
-    
-    get(oldRoomsQuery).then((snapshot) => {
-        if (snapshot.exists()) {
-            const updates = {};
-            snapshot.forEach((child) => {
-                updates[`rooms/${child.key}`] = null;
-            });
-            update(ref(db), updates).catch(() => {});
+            const ONE_DAY = 24 * 60 * 60 * 1000;
+            // 현재 시간 기준으로 정확히 24시간 이전의 타임스탬프 계산
+            const cutoffTime = Date.now() - ONE_DAY;
+            
+            // 파이어베이스 서버에 'createdAt' 기준으로 'cutoffTime' 이전의 방들만 달라고 요청
+            const oldRoomsQuery = query(ref(db, 'rooms'), orderByChild('createdAt'), endAt(cutoffTime));
+            
+            get(oldRoomsQuery).then((snapshot) => {
+                if (snapshot.exists()) {
+                    const updates = {};
+                    snapshot.forEach((child) => {
+                        updates[`rooms/${child.key}`] = null;
+                    });
+                    // 조건에 맞는 낡은 방들을 한 번의 통신으로 일괄 삭제
+                    if (Object.keys(updates).length > 0) {
+                        update(ref(db), updates).catch(() => {});
+                    }
+                }
+            }).catch(() => {});
         }
-    }).catch(() => {});
-}
 
         window.onload = () => {
             cleanupOldRooms();
