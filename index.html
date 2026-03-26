@@ -1,307 +1,225 @@
-<html class="dark" lang="ko"><head></head><body class="bg-background text-on-surface font-body selection:bg-primary/30 min-h-screen texture-bg">```html
-
-
-
-    <meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>레지스탕스 아발론: 온라인</title>
-<link href="data:;base64,iVBORw0KGgo=" rel="icon"/>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&amp;family=Inter:wght@400;500;600&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        "primary": "#cfbdff",
-                        "primary-container": "#6200ee",
-                        "secondary": "#46f5e0",
-                        "tertiary": "#ffb954",
-                        "error": "#ffb4ab",
-                        "background": "#131313",
-                        "surface": "#131313",
-                        "surface-container": "#201f1f",
-                        "surface-container-low": "#1c1b1b",
-                        "surface-container-high": "#2a2a2a",
-                        "surface-container-highest": "#353534",
-                        "on-surface": "#e5e2e1",
-                        "on-surface-variant": "#cbc3d9",
-                        "outline-variant": "#494456",
-                    },
-                    fontFamily: {
-                        "headline": ["Manrope", "Pretendard", "sans-serif"],
-                        "body": ["Inter", "Pretendard", "sans-serif"],
-                    },
-                    borderRadius: { "xl": "0.75rem", "2xl": "1rem", "3xl": "1.5rem" },
-                },
-            },
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>레지스탕스 아발론: 온라인</title>
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+    <style>
+        :root {
+            --bg-color: #121212; --card-bg: #1e1e1e; --text-main: #e0e0e0;
+            --accent: #bb86fc; --accent-hover: #985eff;
+            --danger: #cf6679; --success: #03dac6;
         }
-    </script>
-<style>
-        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-        .glass-card { background: rgba(98, 0, 238, 0.05); backdrop-filter: blur(20px); border: 1px solid rgba(73, 68, 86, 0.15); }
-        .texture-bg { background-image: radial-gradient(circle at 50% 50%, rgba(109, 35, 249, 0.08) 0%, transparent 70%); }
-        .primary-glow { box-shadow: 0 0 20px rgba(207, 189, 255, 0.2); }
-        .quest-glow-active { box-shadow: 0 0 20px rgba(207, 189, 255, 0.3); }
-        
+        body { 
+            font-family: 'Pretendard', sans-serif; background-color: var(--bg-color); color: var(--text-main);
+            text-align: center; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center;
+        }
         .hidden { display: none !important; }
+        .container { 
+            background-color: var(--card-bg); padding: 20px; width: 100%; max-width: 400px; 
+            margin-bottom: 20px; border-radius: 16px; border: 1px solid #333; box-sizing: border-box;
+        }
+        h1 { color: var(--accent); margin-bottom: 10px; font-weight: 800; font-size: 24px; }
+        h3 { margin-top: 0; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        input, select, button { margin: 8px 0; padding: 14px; width: 100%; border-radius: 8px; border: none; box-sizing: border-box; font-size: 16px; }
+        input, select { background-color: #2c2c2c; color: var(--text-main); border: 1px solid #444; }
+        input:focus, select:focus { outline: 2px solid var(--accent); }
+        button { cursor: pointer; font-weight: 600; }
+        .btn-accent { background-color: var(--accent); color: #000; }
+        .btn-ready { background-color: transparent; border: 2px solid var(--success); color: var(--success); }
+        .btn-ready.is-ready { background-color: var(--success); color: #000; }
+        .btn-danger { background-color: transparent; border: 2px solid var(--danger); color: var(--danger); }
+        #playerList { list-style: none; padding: 0; margin: 20px 0; text-align: left; }
+        .player-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background-color: rgba(255,255,255,0.05); margin-bottom: 8px; border-radius: 8px; }
+        .status-badge { font-size: 12px; padding: 4px 8px; border-radius: 4px; background-color: #444; color: #aaa; }
+        .status-badge.ready { background-color: var(--success); color: #000; }
+        
+        .status-badge.offline { background-color: transparent; color: var(--danger); border: 1px dashed var(--danger); }
+        .player-item.offline-row { opacity: 0.5; }
+
+        #startGameBtn { background-color: #ff9800; color: #000; }
+        
+        .role-summary-header {
+            background-color: #2c2c2c; padding: 15px; border-radius: 8px; cursor: pointer;
+            border: 1px solid #444; display: flex; justify-content: space-between; align-items: center;
+            user-select: none;
+        }
+        .role-summary-header:active { background-color: #383838; }
+        .role-summary-content {
+            background-color: #1a1a1a; padding: 20px; border-radius: 0 0 8px 8px;
+            border: 1px solid #444; border-top: none; display: none; margin-bottom: 20px;
+        }
+        .role-summary-content.show { display: block; animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+        .secret-box { border: 1px dashed var(--danger); padding: 15px; border-radius: 12px; background-color: rgba(207, 102, 121, 0.05); margin-top: 15px;}
+        
+        .checkbox-label { display: flex; align-items: center; padding: 10px; background: rgba(255,255,255,0.05); margin-bottom: 5px; border-radius: 6px; cursor: pointer; font-size: 14px;}
+        .checkbox-label input { width: auto; margin-right: 10px; transform: scale(1.2); }
+        .quest-circle { width: 24px; height: 24px; border-radius: 50%; background: #333; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; border: 2px solid #555; transition: all 0.3s; margin: 0 auto;}
+        .quest-circle.active { border-color: var(--accent); background: rgba(187,134,252,0.2); color: var(--accent); box-shadow: 0 0 8px var(--accent); }
+        
+        #hostSettings { margin-bottom: 15px; text-align: left; background: rgba(255,152,0,0.1); border: 1px solid #ff9800; padding: 15px; border-radius: 8px; }
+        
+        #versionWatermark {
+            position: fixed; bottom: 10px; right: 15px; font-size: 12px;
+            color: rgba(255, 255, 255, 0.3); pointer-events: none; z-index: 9999;
+        }
+
         ::-webkit-scrollbar { height: 6px; width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #494456; border-radius: 3px; }
-
-        /* Animation for role reveal */
-        .role-summary-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
-        .role-summary-content.show { max-height: 1000px; }
+        ::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
     </style>
-<!-- Top Navigation -->
-<header class="fixed top-0 w-full z-50 flex justify-between items-center px-6 h-16 bg-background shadow-[0_20px_40px_rgba(98,0,238,0.08)] border-b border-outline-variant/10">
-<div class="flex items-center gap-3">
-<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center overflow-hidden border border-outline-variant/20">
-<span class="material-symbols-outlined text-primary text-sm">shield</span>
-</div>
-<span class="font-headline font-bold tracking-tight text-sm text-primary uppercase">Avalon: Online</span>
-</div>
-<div class="hidden font-headline font-bold text-xs text-primary/60 tracking-widest uppercase" id="roomCodeDisplay">
-            Room: <span id="roomCodeText">----</span>
-</div>
-</header>
-<main class="pt-24 pb-32 px-6 max-w-lg mx-auto flex flex-col min-h-screen">
-<!-- Lobby Screen -->
-<div class="w-full space-y-8 py-12" id="lobbyScreen">
-<div class="text-center space-y-4">
-<h1 class="font-headline font-extrabold text-5xl text-on-surface tracking-tighter leading-none">
-                    아발론: <span class="text-primary italic">온라인</span>
-</h1>
-<p class="text-on-surface-variant text-sm font-medium tracking-wide uppercase opacity-60">The Veiled Court · Lobby</p>
-</div>
-<div class="glass-card p-8 rounded-3xl space-y-6">
-<div class="space-y-4">
-<label class="block text-[10px] font-bold tracking-[0.2em] text-primary uppercase ml-1">Identity</label>
-<div class="relative">
-<input class="w-full bg-transparent border-0 border-b border-outline-variant/30 text-on-surface px-0 py-4 focus:ring-0 focus:border-primary transition-all placeholder:text-on-surface-variant/40 font-headline font-bold text-lg" id="nicknameInput" maxlength="8" placeholder="닉네임 입력" type="text"/>
-<span class="absolute right-0 bottom-4 material-symbols-outlined text-outline-variant">fingerprint</span>
-</div>
-</div>
-<div class="space-y-4 pt-4">
-<label class="block text-[10px] font-bold tracking-[0.2em] text-primary uppercase ml-1">Access Key</label>
-<div class="relative">
-<input class="w-full bg-transparent border-0 border-b border-outline-variant/30 text-on-surface px-0 py-4 focus:ring-0 focus:border-primary transition-all placeholder:text-on-surface-variant/40 font-headline font-medium" id="roomCodeInput" maxlength="4" placeholder="방 코드 4자리 (입장시)" type="text"/>
-<span class="absolute right-0 bottom-4 material-symbols-outlined text-outline-variant">vpn_key</span>
-</div>
-</div>
-</div>
-<div class="grid grid-cols-1 gap-4">
-<button class="group relative w-full overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-primary-container p-px shadow-[0_0_20px_rgba(109,35,249,0.3)] transition-all active:scale-95" id="createRoomBtn">
-<div class="relative bg-background group-hover:bg-transparent transition-colors py-5 rounded-[15px] flex items-center justify-center gap-3">
-<span class="material-symbols-outlined text-primary group-hover:text-on-primary">add_circle</span>
-<span class="font-headline font-extrabold text-primary group-hover:text-on-primary tracking-tight">새로운 방 만들기</span>
-</div>
-</button>
-<button class="group w-full py-5 rounded-2xl border border-outline-variant/20 bg-surface-container-low hover:bg-surface-container-high transition-all active:scale-95 flex items-center justify-center gap-3" id="joinRoomBtn">
-<span class="material-symbols-outlined text-on-surface-variant">login</span>
-<span class="font-headline font-bold text-on-surface tracking-tight">기존 방 입장하기</span>
-</button>
-</div>
-</div>
-<!-- Game Screen (Container) -->
-<div class="hidden w-full space-y-8" id="gameScreen">
-<div class="text-center space-y-1">
-<h3 class="font-headline text-2xl font-bold text-on-surface" id="roomTitle">방 코드: LOADING</h3>
-<p class="text-on-surface-variant text-xs">내 닉네임: <span class="text-primary font-bold" id="myNickname"></span></p>
-</div>
-<!-- Waiting Area -->
-<div class="space-y-8" id="waitingArea">
-<div class="space-y-4">
-<div class="flex items-center gap-2 mb-2">
-<span class="material-symbols-outlined text-secondary text-sm">groups</span>
-<h4 class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">플레이어 목록</h4>
-</div>
-<ul class="space-y-3" id="playerList"></ul>
-</div>
-<div class="hidden glass-card p-6 rounded-3xl space-y-6" id="hostSettings">
-<div class="flex items-center gap-3 border-b border-outline-variant/10 pb-4">
-<span class="material-symbols-outlined text-tertiary">settings</span>
-<h4 class="font-headline font-bold text-sm text-tertiary">방장 특수 직업 설정</h4>
-</div>
-<div class="grid grid-cols-1 gap-4">
-<label class="flex items-center justify-between group cursor-pointer">
-<div class="flex flex-col">
-<span class="text-sm font-bold">퍼시벌</span>
-<span class="text-[10px] text-on-surface-variant uppercase">아서왕의 수하</span>
-</div>
-<input class="w-12 h-6 rounded-full bg-surface-container-highest border-0 text-primary focus:ring-0 cursor-pointer" id="cbPercival" type="checkbox"/>
-</label>
-<label class="flex items-center justify-between group cursor-pointer">
-<div class="flex flex-col">
-<span class="text-sm font-bold">모르가나</span>
-<span class="text-[10px] text-on-surface-variant uppercase">모드레드의 수하</span>
-</div>
-<input class="w-12 h-6 rounded-full bg-surface-container-highest border-0 text-primary focus:ring-0 cursor-pointer" id="cbMorgana" type="checkbox"/>
-</label>
-<label class="flex items-center justify-between group cursor-pointer">
-<div class="flex flex-col">
-<span class="text-sm font-bold">모드레드</span>
-<span class="text-[10px] text-on-surface-variant uppercase">모드레드의 수하</span>
-</div>
-<input class="w-12 h-6 rounded-full bg-surface-container-highest border-0 text-primary focus:ring-0 cursor-pointer" id="cbMordred" type="checkbox"/>
-</label>
-<label class="flex items-center justify-between group cursor-pointer">
-<div class="flex flex-col">
-<span class="text-sm font-bold">오베론</span>
-<span class="text-[10px] text-on-surface-variant uppercase">모드레드의 수하</span>
-</div>
-<input class="w-12 h-6 rounded-full bg-surface-container-highest border-0 text-primary focus:ring-0 cursor-pointer" id="cbOberon" type="checkbox"/>
-</label>
-</div>
-</div>
-<div class="pt-4 space-y-4">
-<button class="w-full py-4 rounded-2xl border-2 border-secondary/30 text-secondary font-headline font-extrabold tracking-tight transition-all active:scale-95" id="readyBtn">준비하기</button>
-<button class="hidden w-full py-4 rounded-2xl bg-gradient-to-br from-primary to-primary-container text-on-primary font-headline font-extrabold tracking-tight primary-glow active:scale-95 transition-all" id="startGameBtn">게임 시작 (5~10명)</button>
-</div>
-</div>
-<!-- Play Area -->
-<div class="hidden space-y-8" id="playArea">
-<!-- Identity Card -->
-<section class="relative group" id="myRolePanel">
-<div class="glass-card rounded-3xl p-6 cursor-pointer hover:scale-[1.01] transition-all duration-300" id="toggleRoleBtn">
-<div class="flex justify-between items-center mb-4">
-<span class="text-primary-fixed text-[10px] uppercase tracking-[0.2em] font-bold">Your Secret Identity</span>
-<span class="material-symbols-outlined text-primary/40" id="toggleIcon">expand_more</span>
-</div>
-<div class="role-summary-content space-y-6 text-center" id="roleSummaryContent">
-<div class="space-y-2">
-<h2 class="font-headline text-4xl font-extrabold tracking-tighter" id="myRoleDisplay">로딩 중</h2>
-<p class="text-on-surface-variant text-xs leading-relaxed max-w-[280px] mx-auto" id="roleDescription"></p>
-</div>
-<div class="hidden p-4 bg-error/5 border border-error/10 rounded-2xl text-left" id="secretInfoArea">
-<div class="flex items-center gap-2 mb-3">
-<span class="material-symbols-outlined text-error text-sm">warning</span>
-<h4 class="text-[10px] font-bold text-error uppercase tracking-widest">기밀 정보</h4>
-</div>
-<ul class="space-y-2 text-sm font-medium" id="secretInfoList"></ul>
-</div>
-</div>
-</div>
-</section>
-<div class="space-y-8" id="gameActionArea">
-<!-- Progress Section -->
-<div class="space-y-4">
-<div class="flex justify-between items-center px-1">
-<span class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Quest Progress</span>
-<div class="text-error text-[10px] font-bold px-2 py-0.5 bg-error/10 rounded-full" id="voteTrackArea"></div>
-</div>
-<div class="bg-surface-container-low rounded-3xl p-6 space-y-6">
-<div class="flex justify-between gap-2" id="questTracker">
-<div class="flex-1 aspect-square rounded-full bg-surface-container-lowest border-2 border-outline-variant/30 flex items-center justify-center font-headline font-bold text-on-surface-variant/40" id="quest1">1</div>
-<div class="flex-1 aspect-square rounded-full bg-surface-container-lowest border-2 border-outline-variant/30 flex items-center justify-center font-headline font-bold text-on-surface-variant/40" id="quest2">2</div>
-<div class="flex-1 aspect-square rounded-full bg-surface-container-lowest border-2 border-outline-variant/30 flex items-center justify-center font-headline font-bold text-on-surface-variant/40" id="quest3">3</div>
-<div class="flex-1 aspect-square rounded-full bg-surface-container-lowest border-2 border-outline-variant/30 flex items-center justify-center font-headline font-bold text-on-surface-variant/40" id="quest4">4</div>
-<div class="flex-1 aspect-square rounded-full bg-surface-container-lowest border-2 border-outline-variant/30 flex items-center justify-center font-headline font-bold text-on-surface-variant/40" id="quest5">5</div>
-</div>
-<div class="flex justify-between font-bold text-[10px] px-1 opacity-80" id="questDetails">
-<div class="text-center flex-1" id="questDetail1"></div>
-<div class="text-center flex-1" id="questDetail2"></div>
-<div class="text-center flex-1" id="questDetail3"></div>
-<div class="text-center flex-1" id="questDetail4"></div>
-<div class="text-center flex-1" id="questDetail5"></div>
-</div>
-</div>
-</div>
-<!-- Status Display -->
-<div class="p-4 bg-surface-container rounded-2xl border-l-4 border-tertiary/40" id="leaderAnnouncement"></div>
-<!-- Interaction Panels -->
-<div class="hidden space-y-4" id="teamSelectionArea">
-<div class="p-4 bg-primary/10 rounded-2xl text-center">
-<p class="text-sm font-medium">원정대원 <span class="text-primary font-bold underline" id="requiredTeamSize">0</span>명을 선택하세요.</p>
-</div>
-<div class="grid grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-2" id="teamCheckboxes"></div>
-<button class="w-full py-4 rounded-2xl bg-primary text-background font-headline font-extrabold disabled:opacity-30 disabled:pointer-events-none transition-all" disabled="" id="submitTeamBtn">원정대 구성 완료</button>
-</div>
-<div class="hidden space-y-6" id="teamVotingArea">
-<div class="text-center space-y-2">
-<h4 class="text-secondary font-bold text-sm uppercase tracking-widest">원정대 찬반 투표</h4>
-<p class="text-xs text-on-surface-variant">원정대장 <b class="text-on-surface" id="votingLeaderName"></b>님이 제안한 원정대:</p>
-</div>
-<ul class="grid grid-cols-2 gap-3" id="proposedTeamList"></ul>
-<div class="grid grid-cols-2 gap-4" id="voteButtons">
-<button class="flex flex-col items-center justify-center py-6 glass-card rounded-2xl border border-secondary/20 group active:scale-95 transition-all" id="btnApprove">
-<span class="material-symbols-outlined text-secondary text-3xl mb-2">thumb_up</span>
-<span class="font-headline font-bold text-secondary text-[10px] uppercase">찬성</span>
-</button>
-<button class="flex flex-col items-center justify-center py-6 glass-card rounded-2xl border border-error/20 group active:scale-95 transition-all" id="btnReject">
-<span class="material-symbols-outlined text-error text-3xl mb-2">thumb_down</span>
-<span class="font-headline font-bold text-error text-[10px] uppercase">반대</span>
-</button>
-</div>
-<p class="text-center text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-widest" id="votingStatus"></p>
-</div>
-<div class="hidden glass-card p-6 rounded-3xl space-y-4 border-primary/20" id="voteResultArea">
-<h4 class="text-center font-headline font-bold text-primary">투표 결과</h4>
-<ul class="space-y-2 text-sm max-h-40 overflow-y-auto" id="voteResultList"></ul>
-<p class="text-center font-bold pt-2" id="voteResultMessage"></p>
-</div>
-<div class="hidden space-y-6" id="questVotingArea">
-<div class="text-center">
-<h4 class="text-primary font-bold text-sm uppercase tracking-widest mb-1">⚔️ 원정 임무 수행</h4>
-<p class="text-xs text-on-surface-variant">임무 결과를 선택하세요.</p>
-</div>
-<div class="grid grid-cols-1 gap-4">
-<button class="w-full py-5 rounded-2xl bg-secondary text-background font-headline font-extrabold shadow-[0_0_20px_rgba(70,245,224,0.3)]" id="btnQuestSuccess">성공 (Success)</button>
-<button class="hidden w-full py-5 rounded-2xl bg-error text-background font-headline font-extrabold shadow-[0_0_20px_rgba(255,180,171,0.3)]" id="btnQuestFail">실패 (Fail)</button>
-</div>
-</div>
-<div class="hidden glass-card p-8 rounded-3xl text-center space-y-6" id="questResultArea">
-<h4 class="text-xs font-bold text-on-surface-variant uppercase tracking-widest">원정 결과</h4>
-<div class="text-3xl font-headline font-extrabold tracking-tighter" id="questResultSummary"></div>
-<p class="text-lg font-bold" id="questResultMessage"></p>
-</div>
-<div class="hidden glass-card p-6 rounded-3xl border-error/30 space-y-6" id="assassinPhaseArea">
-<div class="text-center space-y-2">
-<h3 class="font-headline text-2xl font-bold text-error">🗡️ 암살자 단계</h3>
-<p class="text-xs text-on-surface-variant leading-relaxed">선 진영이 원정 3회를 성공시켰습니다. 이제 악 진영의 암살자가 멀린을 찾아낼 시간입니다.</p>
-</div>
-<div class="hidden space-y-4" id="assassinActionUI">
-<select class="w-full bg-surface-container-highest border-0 rounded-xl text-on-surface py-3 focus:ring-1 focus:ring-error transition-all" id="assassinTargetSelect"></select>
-<button class="w-full py-4 rounded-xl bg-error text-background font-headline font-extrabold" id="btnAssassinate">암살 실행</button>
-</div>
-</div>
-<div class="hidden glass-card p-8 rounded-3xl border-error/20 space-y-8" id="gameOverArea">
-<div class="text-center space-y-3">
-<h3 class="font-headline text-3xl font-extrabold text-on-surface tracking-tighter">게임 종료</h3>
-<p class="text-lg font-bold text-primary" id="gameOverReason"></p>
-</div>
-<div class="space-y-4">
-<h4 class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest text-center">플레이어 정체</h4>
-<ul class="space-y-2 max-h-60 overflow-y-auto" id="finalRoleList"></ul>
-</div>
-<button class="hidden w-full py-4 rounded-xl bg-primary text-background font-headline font-extrabold" id="btnRestartGame">대기실로 돌아가기</button>
-</div>
-<p class="text-center text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-[0.2em] pt-4" id="gameStatusText"></p>
-</div>
-<button class="w-full py-3 rounded-xl border border-error/20 text-error/60 font-bold text-xs hover:bg-error/5 transition-all" id="leaveRoomBtn">방 완전히 나가기</button>
-</div>
-</div></main>
-<!-- Bottom Nav -->
-<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-background/80 backdrop-blur-xl border-t border-outline-variant/15 shadow-[0_-10px_30px_rgba(0,0,0,0.5)] rounded-t-3xl">
-<div class="flex items-center justify-center bg-gradient-to-br from-primary to-primary-container text-white rounded-2xl p-3 shadow-[0_0_15px_rgba(98,0,238,0.4)] transition-all active:scale-90 cursor-pointer">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">theater_comedy</span>
-</div>
-<div class="flex items-center justify-center text-on-surface/40 p-3 hover:text-primary transition-all cursor-pointer">
-<span class="material-symbols-outlined">groups</span>
-</div>
-<div class="flex items-center justify-center text-on-surface/40 p-3 hover:text-primary transition-all cursor-pointer">
-<span class="material-symbols-outlined">history_edu</span>
-</div>
-<div class="flex items-center justify-center text-on-surface/40 p-3 hover:text-primary transition-all cursor-pointer">
-<span class="material-symbols-outlined">settings</span>
-</div>
-</nav>
-<div class="fixed bottom-24 right-6 pointer-events-none opacity-20 text-right" id="versionWatermark">
-<span class="font-headline font-black text-[8px] tracking-widest text-on-surface uppercase block">Protocol v.1.0.4</span>
-<span class="text-[6px] font-medium tracking-tighter text-on-surface-variant uppercase">The Veiled Court</span>
-</div>
-<script type="module">
+</head>
+<body>
+    <h1>아발론: 온라인</h1>
+
+    <div id="lobbyScreen" class="container">
+        <h3>대기실</h3>
+        <input type="text" id="nicknameInput" placeholder="닉네임 입력" maxlength="8"/>
+        <input type="text" id="roomCodeInput" placeholder="방 코드 4자리 (입장시)" maxlength="4" />
+        <button id="createRoomBtn" class="btn-accent">새로운 방 만들기</button>
+        <button id="joinRoomBtn" class="btn-accent">기존 방 입장하기</button>
+    </div>
+
+    <div id="gameScreen" class="container hidden">
+        <h3 id="roomTitle">방 코드: LOADING</h3>
+        <p style="margin-top:0;">내 닉네임: <span id="myNickname" style="color: var(--accent); font-weight:bold;"></span></p>
+
+        <div id="waitingArea">
+            <ul id="playerList"></ul>
+            
+            <div id="hostSettings" class="hidden">
+                <h4 style="margin-top: 0; color: #ff9800; margin-bottom: 10px;">👑 방장 특수 직업 설정</h4>
+                <label class="checkbox-label"><input type="checkbox" id="cbPercival"> 퍼시벌 (아서왕의 수하)</label>
+                <label class="checkbox-label"><input type="checkbox" id="cbMorgana"> 모르가나 (모드레드의 수하)</label>
+                <label class="checkbox-label"><input type="checkbox" id="cbMordred"> 모드레드 (모드레드의 수하)</label>
+                <label class="checkbox-label"><input type="checkbox" id="cbOberon"> 오베론 (모드레드의 수하)</label>
+            </div>
+
+            <button id="readyBtn" class="btn-ready">준비하기</button>
+            <button id="startGameBtn" class="hidden">게임 시작 (5~10명)</button>
+        </div>
+
+        <div id="playArea" class="hidden">
+            <div id="myRolePanel" style="margin-bottom: 20px;">
+                <div class="role-summary-header" id="toggleRoleBtn">
+                    <span style="font-weight: bold;">🕵️ 내 정체 및 기밀 정보 확인</span>
+                    <span id="toggleIcon">▼</span>
+                </div>
+                <div class="role-summary-content" id="roleSummaryContent">
+                    <p style="margin:0 0 10px 0; color:#aaa;">당신의 정체는...</p>
+                    <h2 id="myRoleDisplay" style="margin: 0; font-size: 24px;">로딩 중</h2>
+                    <p id="roleDescription" style="font-size: 14px; margin-top: 10px; line-height: 1.4;"></p>
+                    
+                    <div id="secretInfoArea" class="secret-box hidden">
+                        <h4 style="color: var(--danger); margin-top:0; font-size: 14px;">⚠️ 기밀 정보 (절대 비밀 유지)</h4>
+                        <ul id="secretInfoList" style="list-style: none; padding: 0; text-align: left; margin:0; font-size: 14px;"></ul>
+                    </div>
+                </div>
+            </div>
+
+            <div id="gameActionArea" style="border-top: 1px solid #333; padding-top: 20px;">
+                <h3 style="color: var(--accent); border-bottom: none; margin-bottom: 15px;">진행 상황</h3>
+                
+                <div id="voteTrackArea" style="font-size: 13px; margin-bottom: 15px; font-weight:bold; background: rgba(207, 102, 121, 0.1); padding: 10px; border-radius: 8px; border: 1px dashed var(--danger);">
+                    진행 상태를 불러오는 중...
+                </div>
+
+                <div id="questTrackerContainer" style="margin-bottom:20px;">
+                    <div id="questTracker" style="display:flex; justify-content:space-around; margin-bottom:5px;">
+                        <div style="width:20%;"><div class="quest-circle" id="quest1">1</div></div>
+                        <div style="width:20%;"><div class="quest-circle" id="quest2">2</div></div>
+                        <div style="width:20%;"><div class="quest-circle" id="quest3">3</div></div>
+                        <div style="width:20%;"><div class="quest-circle" id="quest4">4</div></div>
+                        <div style="width:20%;"><div class="quest-circle" id="quest5">5</div></div>
+                    </div>
+                    <div id="questDetails" style="display:flex; justify-content:space-around; font-size:11px; font-weight:bold;">
+                        <div id="questDetail1" style="width:20%;"></div>
+                        <div id="questDetail2" style="width:20%;"></div>
+                        <div id="questDetail3" style="width:20%;"></div>
+                        <div id="questDetail4" style="width:20%;"></div>
+                        <div id="questDetail5" style="width:20%;"></div>
+                    </div>
+                </div>
+
+                <div id="leaderAnnouncement" style="padding: 12px; background: rgba(255,152,0,0.1); border: 1px solid #ff9800; border-radius: 8px; margin-bottom: 15px; color: #ff9800;">
+                    원정대장을 선정 중입니다...
+                </div>
+                
+                <div id="teamSelectionArea" class="hidden" style="margin-bottom: 15px;">
+                    <p style="font-size: 14px;">원정에 참여할 인원 <span id="requiredTeamSize" style="font-weight:bold; color:var(--success);">0</span>명을 선택하세요.</p>
+                    <div id="teamCheckboxes" style="text-align: left; margin-bottom:15px; max-height: 200px; overflow-y:auto;"></div>
+                    <button id="submitTeamBtn" class="btn-accent" disabled>원정대 구성 완료</button>
+                </div>
+
+                <div id="teamVotingArea" class="hidden" style="margin-bottom: 15px; border: 1px solid #444; padding: 15px; border-radius: 8px;">
+                    <h4 style="color: var(--accent); margin-top:0;">🗳️ 원정대 찬반 투표</h4>
+                    <p style="font-size: 14px; margin-bottom:5px;">원정대장 <b id="votingLeaderName"></b>님이 제안한 원정대:</p>
+                    <ul id="proposedTeamList" style="list-style:none; padding:10px; background: rgba(0,0,0,0.3); border-radius:6px; font-weight:bold; color:var(--success);"></ul>
+                    
+                    <div id="voteButtons" style="display:flex; gap:10px; margin-top:15px;">
+                        <button id="btnApprove" class="btn-ready" style="flex:1;">찬성</button>
+                        <button id="btnReject" class="btn-danger" style="flex:1;">반대</button>
+                    </div>
+                    <p id="votingStatus" style="font-size: 14px; color: #aaa; margin-top:10px;"></p>
+                </div>
+
+                <div id="voteResultArea" class="hidden" style="margin-bottom: 15px; padding: 15px; border-radius: 8px; background: rgba(255,255,255,0.05);">
+                    <h4 style="margin-top:0;" id="voteResultTitle">투표 결과</h4>
+                    <ul id="voteResultList" style="list-style:none; padding:0; font-size:14px; text-align:left; max-height: 150px; overflow-y: auto;"></ul>
+                    <p id="voteResultMessage" style="font-weight:bold; margin-top:10px;"></p>
+                </div>
+
+                <div id="questVotingArea" class="hidden" style="margin-bottom: 15px; border: 1px solid var(--accent); padding: 15px; border-radius: 8px;">
+                    <h4 style="color: var(--accent); margin-top:0;">⚔️ 원정 임무 수행</h4>
+                    <p style="font-size: 14px; margin-bottom:15px;">당신은 원정대원입니다. 임무 결과를 선택하세요.<br><span style="font-size:12px; color:#aaa;">(선 진영은 성공만 선택할 수 있습니다)</span></p>
+                    <div style="display:flex; gap:10px;">
+                        <button id="btnQuestSuccess" class="btn-ready" style="flex:1;">임무 성공</button>
+                        <button id="btnQuestFail" class="btn-danger" style="flex:1; display:none;">임무 실패</button>
+                    </div>
+                </div>
+
+                <div id="questResultArea" class="hidden" style="margin-bottom: 15px; padding: 15px; border-radius: 8px; background: rgba(255,255,255,0.05);">
+                    <h4 style="margin-top:0;">원정 결과</h4>
+                    <div id="questResultSummary" style="font-size: 20px; font-weight: bold; margin: 15px 0;"></div>
+                    <p id="questResultMessage" style="font-weight:bold;"></p>
+                </div>
+
+                <div id="assassinPhaseArea" class="hidden" style="margin-bottom: 15px; padding: 15px; border-radius: 8px; background: rgba(207, 102, 121, 0.1); border: 1px solid var(--danger);">
+                    <h3 style="color: var(--danger); border-bottom: none; margin-bottom:5px;">🗡️ 암살자 단계</h3>
+                    <p style="font-size: 14px; margin-bottom: 15px;">선 진영이 원정 3회를 성공시켰습니다.<br>이제 악 진영의 암살자가 멀린을 찾아낼 시간입니다.</p>
+                    
+                    <div id="assassinActionUI" class="hidden">
+                        <select id="assassinTargetSelect">
+                            <option value="">멀린 지목 대상 선택</option>
+                        </select>
+                        <button id="btnAssassinate" class="btn-danger" style="margin-top:10px;">암살 실행</button>
+                    </div>
+                </div>
+
+                <div id="gameOverArea" class="hidden" style="margin-bottom: 15px; padding: 15px; border-radius: 8px; background: rgba(207, 102, 121, 0.1); border: 1px solid var(--danger);">
+                    <h3 style="color: var(--danger); border-bottom: none; margin-bottom:5px;">게임 종료</h3>
+                    <p id="gameOverReason" style="font-weight:bold; margin-bottom:15px; font-size: 18px;"></p>
+                    
+                    <div id="finalRoleReveal" style="text-align:left; background:rgba(0,0,0,0.3); padding:15px; border-radius:8px; border: 1px solid #444;">
+                        <h4 style="margin-top:0; color:var(--accent); text-align:center;">전체 플레이어 정체</h4>
+                        <ul id="finalRoleList" style="list-style:none; padding:0; font-size:14px; margin:0; max-height:200px; overflow-y:auto;"></ul>
+                    </div>
+                    
+                    <button id="btnRestartGame" class="btn-accent hidden" style="margin-top:15px;">새 게임 준비 (대기실로 돌아가기)</button>
+                </div>
+
+                <p id="gameStatusText" style="font-size: 14px; color: #aaa;"></p>
+            </div>
+        </div>
+
+        <button id="leaveRoomBtn" class="btn-danger" style="margin-top:20px;">방 완전히 나가기</button>
+    </div>
+
+    <div id="versionWatermark">v1.0.1</div>
+
+    <script type="module">
         import { db } from "./firebase-config.js";
         import { ref, set, get, onValue, update, onDisconnect, query, orderByChild, endAt } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
         
@@ -316,8 +234,6 @@
         const roleSummaryContent = document.getElementById('roleSummaryContent');
         const toggleIcon = document.getElementById('toggleIcon');
         const hostSettings = document.getElementById('hostSettings');
-        const roomCodeDisplay = document.getElementById('roomCodeDisplay');
-        const roomCodeText = document.getElementById('roomCodeText');
         
         let currentRoomId = null;
         let myUserId = null;
@@ -341,24 +257,34 @@
 
         toggleRoleBtn.addEventListener('click', () => {
             roleSummaryContent.classList.toggle('show');
-            toggleIcon.innerText = roleSummaryContent.classList.contains('show') ? 'expand_less' : 'expand_more';
+            toggleIcon.innerText = roleSummaryContent.classList.contains('show') ? '▲' : '▼';
         });
 
         function cleanupOldRooms() {
             const ONE_DAY = 24 * 60 * 60 * 1000;
+            // 현재 시간 기준으로 정확히 24시간 이전의 타임스탬프 계산
             const cutoffTime = Date.now() - ONE_DAY;
+            
+            // 파이어베이스 서버에 'createdAt' 기준으로 'cutoffTime' 이전의 방들만 달라고 요청
             const oldRoomsQuery = query(ref(db, 'rooms'), orderByChild('createdAt'), endAt(cutoffTime));
+            
             get(oldRoomsQuery).then((snapshot) => {
                 if (snapshot.exists()) {
                     const updates = {};
-                    snapshot.forEach((child) => { updates[`rooms/${child.key}`] = null; });
-                    if (Object.keys(updates).length > 0) { update(ref(db), updates).catch(() => {}); }
+                    snapshot.forEach((child) => {
+                        updates[`rooms/${child.key}`] = null;
+                    });
+                    // 조건에 맞는 낡은 방들을 한 번의 통신으로 일괄 삭제
+                    if (Object.keys(updates).length > 0) {
+                        update(ref(db), updates).catch(() => {});
+                    }
                 }
             }).catch(() => {});
         }
 
         window.onload = () => {
             cleanupOldRooms();
+
             const savedSession = localStorage.getItem('avalon_session');
             if (savedSession) {
                 const sessionData = JSON.parse(savedSession);
@@ -376,7 +302,9 @@
 
         function checkGamePhase() {
             if (currentGameState !== "lobby" && globalPlayersData[myUserId] && globalPlayersData[myUserId].role !== "pending") {
-                if (playArea.classList.contains('hidden')) { transitionToGamePhase(); }
+                if (playArea.classList.contains('hidden')) {
+                    transitionToGamePhase();
+                }
             }
         }
 
@@ -384,12 +312,12 @@
             playArea.classList.add('hidden');
             waitingArea.classList.remove('hidden');
             document.getElementById('roleSummaryContent').classList.remove('show');
-            document.getElementById('toggleIcon').innerText = 'expand_more';
+            document.getElementById('toggleIcon').innerText = '▼';
             document.getElementById('gameStatusText').innerText = '';
+            
             for(let i=1; i<=5; i++) {
-                const circle = document.getElementById(`quest${i}`);
-                circle.className = 'flex-1 aspect-square rounded-full bg-surface-container-lowest border-2 border-outline-variant/30 flex items-center justify-center font-headline font-bold text-on-surface-variant/40';
-                circle.innerText = i;
+                document.getElementById(`quest${i}`).className = 'quest-circle';
+                document.getElementById(`quest${i}`).style = '';
                 document.getElementById(`questDetail${i}`).innerHTML = '';
             }
         }
@@ -397,13 +325,12 @@
         function startRealtimeSync(roomId, nickname) {
             lobbyScreen.classList.add('hidden');
             gameScreen.classList.remove('hidden');
-            roomCodeDisplay.classList.remove('hidden');
-            roomCodeText.innerText = roomId;
-            document.getElementById('roomTitle').innerText = `ROOM: ${roomId}`;
+            document.getElementById('roomTitle').innerText = `방 코드: ${roomId}`;
             document.getElementById('myNickname').innerText = nickname;
 
             const connectedRef = ref(db, '.info/connected');
             const myOnlineRef = ref(db, `rooms/${roomId}/players/${myUserId}/isOnline`);
+            
             onValue(connectedRef, (snap) => {
                 if (snap.val() === true) {
                     onDisconnect(myOnlineRef).set(false);
@@ -414,58 +341,53 @@
             onValue(ref(db, `rooms/${roomId}/players`), (snapshot) => {
                 globalPlayersData = snapshot.val();
                 if (!globalPlayersData) return;
+
                 playerListUI.innerHTML = ''; 
-                let playerCount = 0; let readyCount = 0; let firstPlayerId = null;
-                snapshot.forEach((childSnapshot) => { if (!firstPlayerId) firstPlayerId = childSnapshot.key; });
+                let playerCount = 0; let readyCount = 0; 
+                let firstPlayerId = null;
+
+                snapshot.forEach((childSnapshot) => {
+                    if (!firstPlayerId) firstPlayerId = childSnapshot.key;
+                });
 
                 Object.entries(globalPlayersData).forEach(([userId, player]) => {
                     playerCount++;
                     if (player.isReady && player.isOnline !== false) readyCount++;
+
                     const li = document.createElement('li');
-                    const isCurrentHost = (userId === firstPlayerId);
                     
-                    let statusBadge = '';
+                    const isCurrentHost = (userId === firstPlayerId);
+                    const hostMarker = isCurrentHost ? '<span style="color:#ff9800; margin-right:5px;">★</span>' : '';
+                    
+                    let statusClass = '';
+                    let statusText = '';
                     if (player.isOnline === false) {
-                        li.className = 'flex items-center justify-between p-4 rounded-2xl bg-surface-container-low opacity-50 border border-dashed border-error/20';
-                        statusBadge = '<span class="px-3 py-1 rounded-full text-[10px] font-bold bg-error/10 text-error border border-error/20">OFFLINE</span>';
+                        li.className = 'player-item offline-row';
+                        statusClass = 'offline';
+                        statusText = '오프라인 (연결 끊김)';
                     } else {
-                        li.className = 'flex items-center justify-between p-4 rounded-2xl bg-surface-container-low transition-all hover:bg-surface-container-high group';
-                        statusBadge = player.isReady 
-                            ? '<span class="px-3 py-1 rounded-full text-[10px] font-bold bg-secondary/10 text-secondary border border-secondary/20 shadow-[0_0_15px_rgba(70,245,224,0.15)] uppercase">READY</span>' 
-                            : '<span class="px-3 py-1 rounded-full text-[10px] font-bold bg-outline-variant/20 text-on-surface-variant border border-outline-variant/10 uppercase">WAITING</span>';
+                        li.className = 'player-item';
+                        statusClass = player.isReady ? 'ready' : '';
+                        statusText = player.isReady ? '준비 완료' : '대기 중';
                     }
 
-                    li.innerHTML = `
-                        <div class="flex items-center gap-4">
-                            <div class="relative">
-                                <div class="w-10 h-10 rounded-xl bg-surface-container-highest flex items-center justify-center border border-outline-variant/20 overflow-hidden">
-                                    <span class="material-symbols-outlined text-on-surface-variant/40">person</span>
-                                </div>
-                                ${isCurrentHost ? '<div class="absolute -top-2 -right-2 bg-tertiary text-background p-1 rounded-lg shadow-lg"><span class="material-symbols-outlined text-[10px]" style="font-variation-settings:\'FILL\' 1">workspace_premium</span></div>' : ''}
-                            </div>
-                            <div>
-                                <div class="font-headline font-bold text-on-surface text-sm">${player.nickname}</div>
-                                <div class="text-[9px] text-on-surface-variant uppercase tracking-tighter">${isCurrentHost ? 'Host & Commander' : 'Noble Seeker'}</div>
-                            </div>
-                        </div>
-                        ${statusBadge}
-                    `;
+                    li.innerHTML = `<span class="player-name">${hostMarker}${player.nickname}</span><span class="status-badge ${statusClass}">${statusText}</span>`;
                     playerListUI.appendChild(li);
 
                     if (userId === myUserId) {
                         readyBtn.innerText = player.isReady ? "준비 완료!" : "준비하기";
-                        if (player.isReady) readyBtn.classList.replace('border-secondary/30', 'bg-secondary');
-                        else readyBtn.classList.replace('bg-secondary', 'border-secondary/30');
-                        if (player.isReady) readyBtn.classList.add('text-background');
-                        else readyBtn.classList.remove('text-background');
+                        if (player.isReady) readyBtn.classList.add('is-ready');
+                        else readyBtn.classList.remove('is-ready');
                     }
                 });
 
                 isHost = (myUserId === firstPlayerId);
+                
                 if (isHost) {
                     hostSettings.classList.remove('hidden');
                     startGameBtn.classList.remove('hidden');
                     const allOnline = Object.values(globalPlayersData).every(p => p.isOnline !== false);
+                    
                     if (playerCount >= 5 && playerCount <= 10 && readyCount === playerCount && allOnline) {
                         startGameBtn.disabled = false;
                         startGameBtn.innerText = `게임 시작 (${playerCount}명)`;
@@ -479,6 +401,7 @@
                     hostSettings.classList.add('hidden');
                     startGameBtn.classList.add('hidden');
                 }
+
                 if (currentGameState === "lobby") transitionToLobbyPhase();
                 else checkGamePhase();
             });
@@ -486,8 +409,12 @@
             if(gameStateCleanup) gameStateCleanup();
             gameStateCleanup = onValue(ref(db, `rooms/${roomId}/gameState`), (snapshot) => {
                 currentGameState = snapshot.val();
-                if (currentGameState === "lobby") { transitionToLobbyPhase(); } 
-                else { checkGamePhase(); if(currentPlayData && globalPlayersData[myUserId]) renderGamePhase(currentPlayData); }
+                if (currentGameState === "lobby") {
+                    transitionToLobbyPhase();
+                } else {
+                    checkGamePhase();
+                    if(currentPlayData && globalPlayersData[myUserId]) renderGamePhase(currentPlayData);
+                }
             });
 
             if(playDataCleanup) playDataCleanup();
@@ -500,29 +427,43 @@
         function transitionToGamePhase() {
             waitingArea.classList.add('hidden'); 
             playArea.classList.remove('hidden'); 
+
             const myRole = globalPlayersData[myUserId].role;
             const roleDisplay = document.getElementById('myRoleDisplay');
             const roleDesc = document.getElementById('roleDescription');
-            
-            const roleStyles = {
-                "Merlin": { label: "Merlin", color: "text-primary", desc: "당신은 모드레드를 제외한 악의 무리를 알 수 있습니다. 정체를 들키면 마지막에 암살당할 수 있습니다." },
-                "Percival": { label: "Percival", color: "text-primary", desc: "당신은 누가 멀린인지 알 수 있습니다. (모르가나가 포함된 경우 둘 중 누가 멀린인지 추리해야 합니다.)" },
-                "Servant of Arthur": { label: "The Loyal Servant", color: "text-on-surface", desc: "특별한 정보가 없습니다. 대화와 투표를 통해 누가 악인지 추리하여 원정을 성공으로 이끄세요." },
-                "Assassin": { label: "Assassin", color: "text-error", desc: "오베론을 제외한 다른 악의 무리를 압니다. 선의 승리로 끝날 때 멀린을 찾아내 암살하면 역전승합니다." },
-                "Morgana": { label: "Morgana", color: "text-error", desc: "멀린으로 위장하여 퍼시벌을 혼란에 빠뜨립니다. 오베론을 제외한 다른 악의 무리를 압니다." },
-                "Mordred": { label: "Mordred", color: "text-error", desc: "멀린에게 정체가 발각되지 않습니다. 오베론을 제외한 다른 악의 무리를 압니다." },
-                "Oberon": { label: "Oberon", color: "text-error", desc: "다른 악의 무리를 모르며, 다른 악의 무리도 당신을 모릅니다. (단, 멀린은 당신을 압니다.)" },
-                "Minion of Mordred": { label: "The Minion", color: "text-error", desc: "정체를 숨기고 원정을 실패시키세요." }
-            };
 
-            const style = roleStyles[myRole] || { label: "Pending", color: "text-on-surface-variant", desc: "대기 중..." };
-            roleDisplay.innerText = style.label;
-            roleDisplay.className = `font-headline text-4xl font-extrabold tracking-tighter ${style.color}`;
-            roleDesc.innerText = style.desc;
-
-            const revealTypeMap = { "Merlin": "Merlin", "Percival": "Percival", "Assassin": "Evil", "Morgana": "Evil", "Mordred": "Evil", "Minion of Mordred": "Evil" };
-            if (revealTypeMap[myRole]) showSecretInfo(revealTypeMap[myRole]);
-            else document.getElementById('secretInfoArea').classList.add('hidden');
+            if (myRole === "Merlin") {
+                roleDisplay.innerText = "멀린 (아서왕의 수하)"; roleDisplay.style.color = "var(--success)";
+                roleDesc.innerText = "당신은 모드레드를 제외한 악의 무리를 알 수 있습니다. 정체를 들키면 마지막에 암살당할 수 있습니다.";
+                showSecretInfo("Merlin");
+            } else if (myRole === "Percival") {
+                roleDisplay.innerText = "퍼시벌 (아서왕의 수하)"; roleDisplay.style.color = "var(--success)";
+                roleDesc.innerText = "당신은 누가 멀린인지 알 수 있습니다. (모르가나가 포함된 경우 둘 중 누가 멀린인지 추리해야 합니다.)";
+                showSecretInfo("Percival");
+            } else if (myRole === "Servant of Arthur") {
+                roleDisplay.innerText = "아서왕의 충직한 신하 (아서왕의 수하)"; roleDisplay.style.color = "var(--success)";
+                roleDesc.innerText = "당신은 특별한 정보가 없습니다. 대화와 투표를 통해 누가 악인지 추리하여 원정을 성공으로 이끄세요.";
+            } else if (myRole === "Assassin") {
+                roleDisplay.innerText = "암살자 (모드레드의 수하)"; roleDisplay.style.color = "var(--danger)";
+                roleDesc.innerText = "당신은 오베론을 제외한 다른 악의 무리를 압니다. 선의 승리로 끝날 때 멀린을 정확히 찾아내 암살하면 역전승합니다.";
+                showSecretInfo("Evil");
+            } else if (myRole === "Morgana") {
+                roleDisplay.innerText = "모르가나 (모드레드의 수하)"; roleDisplay.style.color = "var(--danger)";
+                roleDesc.innerText = "당신은 멀린으로 위장하여 퍼시벌을 혼란에 빠뜨립니다. 오베론을 제외한 다른 악의 무리를 압니다.";
+                showSecretInfo("Evil");
+            } else if (myRole === "Mordred") {
+                roleDisplay.innerText = "모드레드 (모드레드의 수하)"; roleDisplay.style.color = "var(--danger)";
+                roleDesc.innerText = "당신은 멀린에게 정체가 발각되지 않습니다. 오베론을 제외한 다른 악의 무리를 압니다.";
+                showSecretInfo("Evil");
+            } else if (myRole === "Oberon") {
+                roleDisplay.innerText = "오베론 (모드레드의 수하)"; roleDisplay.style.color = "var(--danger)";
+                roleDesc.innerText = "당신은 다른 악의 무리를 모르며, 다른 악의 무리도 당신을 모릅니다. (단, 멀린은 당신을 압니다.)";
+                showSecretInfo("Oberon"); 
+            } else if (myRole === "Minion of Mordred") {
+                roleDisplay.innerText = "모드레드의 수하"; roleDisplay.style.color = "var(--danger)";
+                roleDesc.innerText = "당신은 오베론을 제외한 다른 악의 무리를 압니다. 정체를 숨기고 원정을 실패시키세요.";
+                showSecretInfo("Evil");
+            }
         }
 
         function showSecretInfo(viewerType) {
@@ -530,170 +471,269 @@
             const secretList = document.getElementById('secretInfoList');
             secretList.innerHTML = '';
             let hasInfo = false;
+
             Object.entries(globalPlayersData).forEach(([id, player]) => {
                 if (id === myUserId) return; 
                 const role = player.role;
                 const isEvil = ["Assassin", "Morgana", "Mordred", "Oberon", "Minion of Mordred"].includes(role);
-                let infoText = "";
-                if (viewerType === "Merlin" && isEvil && role !== "Mordred") infoText = "Evil is amongst us";
-                else if (viewerType === "Percival" && (role === "Merlin" || role === "Morgana")) infoText = "Merlin or Morgana";
-                else if (viewerType === "Evil" && isEvil && role !== "Oberon") infoText = "Ally";
                 
-                if (infoText) {
-                    secretList.innerHTML += `<li class="flex items-center gap-3 text-on-surface/80">
-                        <span class="w-6 h-6 rounded-full bg-surface-container-highest flex items-center justify-center text-[10px] text-primary/60">
-                            ${viewerType === "Evil" ? 'skull' : 'auto_awesome'}
-                        </span>
-                        <span class="font-bold text-primary">${player.nickname}</span>
-                        <span class="text-[9px] opacity-40 uppercase ml-auto tracking-widest">${infoText}</span>
-                    </li>`;
-                    hasInfo = true;
+                if (viewerType === "Merlin") {
+                    if (isEvil && role !== "Mordred") {
+                        secretList.innerHTML += `<li style="margin-bottom:5px;">😈 <span style="font-weight:bold;">${player.nickname}</span> (모드레드의 수하)</li>`;
+                        hasInfo = true;
+                    }
+                } else if (viewerType === "Percival") {
+                    if (role === "Merlin" || role === "Morgana") {
+                        secretList.innerHTML += `<li style="margin-bottom:5px;">🧙‍♂️ <span style="font-weight:bold;">${player.nickname}</span> (멀린 혹은 모르가나)</li>`;
+                        hasInfo = true;
+                    }
+                } else if (viewerType === "Evil") {
+                    if (isEvil && role !== "Oberon") {
+                        secretList.innerHTML += `<li style="margin-bottom:5px;">🤝 <span style="font-weight:bold;">${player.nickname}</span> (같은 편)</li>`;
+                        hasInfo = true;
+                    }
                 }
             });
+
             if (hasInfo) secretArea.classList.remove('hidden');
         }
 
         function renderGamePhase(playData) {
             if (!playData || currentGameState === "lobby") return;
+
             const voteTrackText = document.getElementById('voteTrackArea');
-            const currentAttempt = playData.voteTrack || 0;
-            voteTrackText.innerText = `${5 - currentAttempt} Wins Needed`;
-            if (currentAttempt >= 4) voteTrackText.className = "text-error text-[10px] font-bold px-2 py-0.5 bg-error/10 rounded-full animate-pulse";
-            else voteTrackText.className = "text-secondary text-[10px] font-bold px-2 py-0.5 bg-secondary/10 rounded-full";
+            if (playData.voteTrack !== undefined) {
+                const currentAttempt = playData.voteTrack + 1;
+                if (currentAttempt >= 5) {
+                    voteTrackText.innerHTML = `<span style="color:#ff5252;">⚠️ 마지막 5번째 제안입니다! (부결 시 악 진영 즉시 승리)</span>`;
+                    voteTrackText.style.borderColor = "#ff5252";
+                } else {
+                    voteTrackText.innerHTML = `<span style="color:#e0e0e0;">현재 <b>${currentAttempt}</b>번째 원정대 제안 (부결 시 ${5 - currentAttempt}번 기회 남음)</span>`;
+                    voteTrackText.style.borderColor = "#555";
+                }
+            }
 
             const currentQuestIndex = playData.currentQuest || 0;
             const totalPlayers = playData.playerOrder.length;
             const requiredSize = QUEST_CAPACITY[totalPlayers][currentQuestIndex];
+
             const questResults = playData.questResults || [];
             const questDetails = playData.questDetails || [];
             
             for(let i=0; i<5; i++) {
                 const qCircle = document.getElementById(`quest${i+1}`);
-                qCircle.className = 'flex-1 aspect-square rounded-full border-2 flex items-center justify-center font-headline font-bold transition-all duration-500'; 
-                if (i === currentQuestIndex) qCircle.classList.add('bg-surface-container-highest', 'border-primary', 'quest-glow-active', 'text-primary');
-                else qCircle.classList.add('bg-surface-container-lowest', 'border-outline-variant/30', 'text-on-surface-variant/40');
+                qCircle.className = 'quest-circle'; 
+                qCircle.style = ''; 
+
+                if (i === currentQuestIndex) qCircle.classList.add('active');
                 
                 if (questResults[i] === 'success') {
-                    qCircle.classList.replace('text-on-surface-variant/40', 'text-secondary');
-                    qCircle.classList.replace('border-outline-variant/30', 'border-secondary');
-                    qCircle.classList.replace('bg-surface-container-lowest', 'bg-secondary/20');
-                    qCircle.innerHTML = '<span class="material-symbols-outlined" style="font-variation-settings:\'FILL\' 1">check_circle</span>';
+                    qCircle.style.backgroundColor = 'var(--success)';
+                    qCircle.style.color = '#000';
+                    qCircle.style.borderColor = 'var(--success)';
                 } else if (questResults[i] === 'fail') {
-                    qCircle.classList.replace('text-on-surface-variant/40', 'text-error');
-                    qCircle.classList.replace('border-outline-variant/30', 'border-error');
-                    qCircle.classList.replace('bg-surface-container-lowest', 'bg-error/20');
-                    qCircle.innerHTML = '<span class="material-symbols-outlined" style="font-variation-settings:\'FILL\' 1">cancel</span>';
-                } else {
-                    qCircle.innerText = i + 1;
+                    qCircle.style.backgroundColor = 'var(--danger)';
+                    qCircle.style.color = '#fff';
+                    qCircle.style.borderColor = 'var(--danger)';
                 }
+
                 const detailEl = document.getElementById(`questDetail${i+1}`);
-                if (questDetails[i]) detailEl.innerHTML = `<span class="text-secondary">${questDetails[i].s}</span>/<span class="text-error">${questDetails[i].f}</span>`;
-                else detailEl.innerHTML = '';
+                if (questDetails[i]) {
+                    detailEl.innerHTML = `<span style="color:var(--success)">${questDetails[i].s}</span>/<span style="color:var(--danger)">${questDetails[i].f}</span>`;
+                } else {
+                    detailEl.innerHTML = '';
+                }
             }
 
+            // [신규] 원정대장 순서를 현재 대장(leaderIndex) 기준으로 회전시켜 항상 첫 번째로 렌더링
             const leaderIdx = playData.leaderIndex || 0;
-            const leaderId = playData.playerOrder[leaderIdx];
-            const leaderName = globalPlayersData[leaderId]?.nickname || "Leader";
+            const orderedPlayers = [
+                ...playData.playerOrder.slice(leaderIdx),
+                ...playData.playerOrder.slice(0, leaderIdx)
+            ];
+
+            const leaderHtml = orderedPlayers.map((id, idx) => {
+                const name = globalPlayersData[id] ? globalPlayersData[id].nickname : "알 수 없음";
+                if (idx === 0) {
+                    return `<span style="color:#ff9800; font-weight:bold; border-bottom: 2px solid #ff9800; padding-bottom: 2px;">👑${name}</span>`;
+                }
+                return `<span style="color:#888;">${name}</span>`;
+            }).join(' <span style="color:#555; font-size:10px; margin: 0 4px;">▶</span> ');
+
             document.getElementById('leaderAnnouncement').innerHTML = `
-                <div class="flex items-center gap-4">
-                    <div class="relative w-10 h-10 rounded-xl bg-surface-container-highest flex items-center justify-center border border-tertiary/20">
-                        <span class="material-symbols-outlined text-tertiary text-xl" style="font-variation-settings:\'FILL\' 1">star</span>
-                    </div>
-                    <div>
-                        <h4 class="font-headline font-bold text-on-surface text-sm">${leaderName} <span class="text-[9px] text-tertiary ml-2 uppercase tracking-tighter">Leader</span></h4>
-                        <p class="text-on-surface-variant text-[10px]">is proposing a team for Quest ${currentQuestIndex + 1}</p>
-                    </div>
+                <div style="margin-bottom:10px; font-size:14px; font-weight:bold; color: #fff;">원정대장 진행 순서</div>
+                <div style="font-size:13px; overflow-x:auto; white-space:nowrap; padding: 10px; background: rgba(0,0,0,0.3); border-radius:6px; border: 1px solid #444;">
+                    ${leaderHtml}
                 </div>
             `;
 
-            ['teamSelectionArea', 'teamVotingArea', 'voteResultArea', 'questVotingArea', 'questResultArea', 'assassinPhaseArea', 'gameOverArea'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            document.getElementById('teamSelectionArea').classList.add('hidden');
+            document.getElementById('teamVotingArea').classList.add('hidden');
+            document.getElementById('voteResultArea').classList.add('hidden');
+            document.getElementById('questVotingArea').classList.add('hidden');
+            document.getElementById('questResultArea').classList.add('hidden');
+            document.getElementById('assassinPhaseArea').classList.add('hidden');
+            document.getElementById('gameOverArea').classList.add('hidden');
+            
             const statusText = document.getElementById('gameStatusText');
 
             if (currentGameState === "game_over") {
                 document.getElementById('gameOverArea').classList.remove('hidden');
-                let reasonText = playData.voteTrack >= 5 ? "원정대 투표 5회 연속 부결: 악의 승리" :
-                    (questResults.filter(r => r === 'fail').length >= 3 ? "원정 실패 3회 누적: 악의 승리" :
-                    (playData.assassinatedTarget ? (globalPlayersData[playData.assassinatedTarget].role === "Merlin" ? "암살자 성공: 악의 승리" : "암살자 실패: 선의 승리") : "원정 성공 3회: 선의 승리"));
+                let reasonText = "";
+                
+                // [수정] 명확한 승패 텍스트 반영
+                if (playData.voteTrack >= 5) {
+                    reasonText = "원정대 투표가 5회 연속 부결되었습니다. 악 진영이 최종 승리했습니다!";
+                } else if (questResults.filter(r => r === 'fail').length >= 3) {
+                    reasonText = "원정 실패가 3회 누적되었습니다. 악 진영이 최종 승리했습니다!";
+                } else if (playData.assassinatedTarget) {
+                    const targetRole = globalPlayersData[playData.assassinatedTarget].role;
+                    const targetName = globalPlayersData[playData.assassinatedTarget].nickname;
+                    if (targetRole === "Merlin") {
+                        reasonText = `암살자가 멀린(${targetName})을 정확히 암살했습니다. 악 진영의 역전승입니다!`;
+                    } else {
+                        reasonText = `암살자가 잘못된 대상(${targetName})을 암살했습니다. 선 진영이 최종 승리했습니다!`;
+                    }
+                } else {
+                    reasonText = "선 진영이 원정 3회를 성공시켜 최종 승리했습니다!";
+                }
+
                 document.getElementById('gameOverReason').innerText = reasonText;
-                statusText.innerText = "GAME OVER";
+                statusText.innerText = "게임이 종료되었습니다.";
+
                 const roleListEl = document.getElementById('finalRoleList');
                 roleListEl.innerHTML = '';
                 Object.values(globalPlayersData).forEach(player => {
                     const isEvil = ["Assassin", "Morgana", "Mordred", "Oberon", "Minion of Mordred"].includes(player.role);
-                    roleListEl.innerHTML += `<li class="flex justify-between items-center p-3 bg-surface-container-low rounded-xl">
-                        <span class="text-sm font-bold ${isEvil ? 'text-error' : 'text-secondary'}">${player.nickname}</span>
-                        <span class="text-[10px] text-on-surface-variant uppercase tracking-widest">${player.role}</span>
+                    const nameColor = isEvil ? 'var(--danger)' : 'var(--success)';
+                    
+                    let displayRole = "아서왕의 충직한 신하";
+                    if(player.role === "Merlin") displayRole = "멀린";
+                    else if(player.role === "Percival") displayRole = "퍼시벌";
+                    else if(player.role === "Assassin") displayRole = "암살자";
+                    else if(player.role === "Morgana") displayRole = "모르가나";
+                    else if(player.role === "Mordred") displayRole = "모드레드";
+                    else if(player.role === "Oberon") displayRole = "오베론";
+                    else if(player.role === "Minion of Mordred") displayRole = "모드레드의 수하";
+
+                    roleListEl.innerHTML += `<li style="padding: 5px 0; border-bottom: 1px solid #555;">
+                        <span style="color:${nameColor}; font-weight:bold;">${player.nickname}</span> : ${displayRole}
                     </li>`;
                 });
-                if (isHost) document.getElementById('btnRestartGame').classList.remove('hidden');
+
+                if (isHost) {
+                    document.getElementById('btnRestartGame').classList.remove('hidden');
+                }
                 return;
             }
 
             if (currentGameState === "assassin_phase") {
                 document.getElementById('assassinPhaseArea').classList.remove('hidden');
+                
                 if (globalPlayersData[myUserId].role === "Assassin") {
                     document.getElementById('assassinActionUI').classList.remove('hidden');
+                    statusText.innerText = "당신은 암살자입니다. 멀린이라고 생각되는 플레이어를 선택하세요.";
+                    
                     const targetSelect = document.getElementById('assassinTargetSelect');
                     if (targetSelect.options.length <= 1) { 
-                        playData.playerOrder.forEach(id => { if (id !== myUserId) targetSelect.innerHTML += `<option value="${id}">${globalPlayersData[id].nickname}</option>`; });
+                        playData.playerOrder.forEach(id => {
+                            if (id !== myUserId) {
+                                targetSelect.innerHTML += `<option value="${id}">${globalPlayersData[id].nickname}</option>`;
+                            }
+                        });
                     }
+
                     document.getElementById('btnAssassinate').onclick = () => {
                         const targetId = targetSelect.value;
-                        if (!targetId) return;
+                        if (!targetId) return alert("대상을 선택하세요.");
                         if (confirm(`정말로 ${globalPlayersData[targetId].nickname} 님을 암살하시겠습니까?`)) {
-                            update(ref(db), { [`rooms/${currentRoomId}/playData/assassinatedTarget`]: targetId, [`rooms/${currentRoomId}/gameState`]: "game_over" });
+                            const updates = {};
+                            updates[`rooms/${currentRoomId}/playData/assassinatedTarget`] = targetId;
+                            updates[`rooms/${currentRoomId}/gameState`] = "game_over";
+                            update(ref(db), updates);
                         }
                     };
+                } else {
+                    document.getElementById('assassinActionUI').classList.add('hidden');
+                    statusText.innerText = "암살자가 대상을 지정하고 있습니다...";
                 }
                 return;
             }
 
             if (currentGameState === "team_building") {
-                if (myUserId === leaderId) {
+                const leaderIdObj = playData.playerOrder[playData.leaderIndex];
+                if (myUserId === leaderIdObj) {
                     document.getElementById('teamSelectionArea').classList.remove('hidden');
                     document.getElementById('requiredTeamSize').innerText = requiredSize;
+                    statusText.innerText = "당신이 원정대장입니다. 원정대원을 구성해주세요.";
+                    
                     const teamCheckboxes = document.getElementById('teamCheckboxes');
                     const submitTeamBtn = document.getElementById('submitTeamBtn');
                     teamCheckboxes.innerHTML = '';
+                    
                     playData.playerOrder.forEach(id => {
+                        if (!globalPlayersData[id]) return;
                         const label = document.createElement('label');
-                        label.className = 'flex items-center gap-3 p-3 bg-surface-container-low rounded-xl cursor-pointer border-l-4 border-outline-variant/20 hover:border-primary/40 transition-all';
-                        label.innerHTML = `
-                            <input type="checkbox" value="${id}" class="team-cb w-4 h-4 rounded-md border-0 bg-surface-container-highest text-primary focus:ring-0">
-                            <span class="text-xs font-bold">${globalPlayersData[id].nickname}</span>
-                        `;
+                        label.className = 'checkbox-label';
+                        label.innerHTML = `<input type="checkbox" value="${id}" class="team-cb"> ${globalPlayersData[id].nickname}`;
+                        
                         label.querySelector('input').addEventListener('change', () => {
                             const checked = document.querySelectorAll('.team-cb:checked');
                             submitTeamBtn.disabled = checked.length !== requiredSize;
-                            if(checked.length > requiredSize) { label.querySelector('input').checked = false; submitTeamBtn.disabled = document.querySelectorAll('.team-cb:checked').length !== requiredSize; }
+                            if(checked.length > requiredSize) {
+                                label.querySelector('input').checked = false;
+                                submitTeamBtn.disabled = document.querySelectorAll('.team-cb:checked').length !== requiredSize;
+                            }
                         });
                         teamCheckboxes.appendChild(label);
                     });
+
                     submitTeamBtn.onclick = () => {
                         const selectedIds = Array.from(document.querySelectorAll('.team-cb:checked')).map(cb => cb.value);
-                        if(selectedIds.length === requiredSize) update(ref(db), { [`rooms/${currentRoomId}/playData/selectedTeam`]: selectedIds, [`rooms/${currentRoomId}/playData/teamVotes`]: null, [`rooms/${currentRoomId}/gameState`]: "team_voting" });
+                        if(selectedIds.length === requiredSize) {
+                            const updates = {};
+                            updates[`rooms/${currentRoomId}/playData/selectedTeam`] = selectedIds;
+                            updates[`rooms/${currentRoomId}/playData/teamVotes`] = null;
+                            updates[`rooms/${currentRoomId}/gameState`] = "team_voting"; 
+                            update(ref(db), updates);
+                        }
                     };
-                } else statusText.innerText = `${leaderName}님이 원정대를 구성 중...`;
+                } else {
+                    const currentLeaderName = globalPlayersData[leaderIdObj] ? globalPlayersData[leaderIdObj].nickname : "원정대장";
+                    statusText.innerHTML = `원정대장 <b>${currentLeaderName}</b>님이 원정대를 구성하고 있습니다...<br>토론을 통해 의견을 나누세요.`;
+                }
             } 
             else if (currentGameState === "team_voting") {
                 document.getElementById('teamVotingArea').classList.remove('hidden');
-                document.getElementById('votingLeaderName').innerText = leaderName;
+                const leaderIdObj = playData.playerOrder[playData.leaderIndex];
+                document.getElementById('votingLeaderName').innerText = globalPlayersData[leaderIdObj] ? globalPlayersData[leaderIdObj].nickname : "알 수 없음";
+                
                 const proposedTeamList = document.getElementById('proposedTeamList');
                 proposedTeamList.innerHTML = '';
                 (playData.selectedTeam || []).forEach(id => {
-                    proposedTeamList.innerHTML += `<li class="flex items-center gap-3 p-3 bg-surface-container-low rounded-xl border-l-4 border-secondary/40 text-[10px] font-bold">${globalPlayersData[id].nickname}</li>`;
+                    proposedTeamList.innerHTML += `<li>${globalPlayersData[id].nickname}</li>`;
                 });
+
                 const votes = playData.teamVotes || {};
                 const currentVoteCount = Object.keys(votes).length;
                 document.getElementById('votingStatus').innerText = `투표 현황: ${currentVoteCount} / ${totalPlayers} 명 완료`;
+
                 const btnApprove = document.getElementById('btnApprove');
                 const btnReject = document.getElementById('btnReject');
-                if (votes[myUserId]) { [btnApprove, btnReject].forEach(b => { b.disabled = true; b.style.opacity = 0.5; }); } 
-                else {
-                    [btnApprove, btnReject].forEach(b => { b.disabled = false; b.style.opacity = 1; });
-                    btnApprove.onclick = () => set(ref(db, `rooms/${currentRoomId}/playData/teamVotes/${myUserId}`), 'approve');
-                    btnReject.onclick = () => set(ref(db, `rooms/${currentRoomId}/playData/teamVotes/${myUserId}`), 'reject');
+
+                if (votes[myUserId]) {
+                    btnApprove.disabled = true; btnReject.disabled = true;
+                    btnApprove.style.opacity = 0.5; btnReject.style.opacity = 0.5;
+                    statusText.innerText = "다른 플레이어들의 투표를 기다리고 있습니다.";
+                } else {
+                    btnApprove.disabled = false; btnReject.disabled = false;
+                    btnApprove.style.opacity = 1; btnReject.style.opacity = 1;
+                    statusText.innerText = "제안된 원정대에 찬성 또는 반대를 선택하세요.";
+                    
+                    btnApprove.onclick = () => { set(ref(db, `rooms/${currentRoomId}/playData/teamVotes/${myUserId}`), 'approve'); };
+                    btnReject.onclick = () => { set(ref(db, `rooms/${currentRoomId}/playData/teamVotes/${myUserId}`), 'reject'); };
                 }
+
                 if (isHost && currentVoteCount === totalPlayers) {
                     update(ref(db, `rooms/${currentRoomId}`), { gameState: "team_voting_result" });
                     setTimeout(() => resolveTeamVoting(playData, votes, totalPlayers), 4000);
@@ -701,50 +741,90 @@
             }
             else if (currentGameState === "team_voting_result") {
                 document.getElementById('voteResultArea').classList.remove('hidden');
+                statusText.innerText = "투표 결과를 확인 중입니다...";
+                
                 const votes = playData.teamVotes || {};
                 const voteResultList = document.getElementById('voteResultList');
                 voteResultList.innerHTML = '';
                 let approveCount = 0;
+
                 Object.entries(votes).forEach(([id, v]) => {
                     if (v === 'approve') approveCount++;
-                    voteResultList.innerHTML += `<li class="flex justify-between items-center p-2 rounded-lg bg-surface-container-highest/30">
-                        <span class="text-xs font-medium">${globalPlayersData[id]?.nickname || '??'}</span>
-                        <span class="text-[10px] font-bold ${v === 'approve' ? 'text-secondary' : 'text-error'}">${v === 'approve' ? 'APPROVE' : 'REJECT'}</span>
-                    </li>`;
+                    const voteText = v === 'approve' ? '🟢 찬성' : '🔴 반대';
+                    voteResultList.innerHTML += `<li>${globalPlayersData[id] ? globalPlayersData[id].nickname : '알 수 없음'}: ${voteText}</li>`;
                 });
+
                 const isApproved = approveCount > (totalPlayers / 2);
                 const resultMsgEl = document.getElementById('voteResultMessage');
-                resultMsgEl.innerText = isApproved ? "원정대 가결! (SUCCESS)" : "원정대 부결 (FAILED)";
-                resultMsgEl.className = `text-center font-bold pt-4 text-sm ${isApproved ? 'text-secondary' : 'text-error'}`;
+                if (isApproved) {
+                    resultMsgEl.innerText = "원정대가 가결되었습니다! (원정 진행 대기중...)";
+                    resultMsgEl.style.color = "var(--success)";
+                } else {
+                    resultMsgEl.innerText = "원정대가 부결되었습니다. (다음 원정대장으로 넘어갑니다...)";
+                    resultMsgEl.style.color = "var(--danger)";
+                }
             }
             else if (currentGameState === "quest_voting") {
-                if ((playData.selectedTeam || []).includes(myUserId)) {
+                const isParticipant = (playData.selectedTeam || []).includes(myUserId);
+                
+                if (isParticipant) {
                     document.getElementById('questVotingArea').classList.remove('hidden');
+                    
                     const myRole = globalPlayersData[myUserId].role;
                     const isEvil = ["Assassin", "Morgana", "Mordred", "Oberon", "Minion of Mordred"].includes(myRole);
+                    
                     document.getElementById('btnQuestFail').style.display = isEvil ? 'block' : 'none';
+
                     const qVotes = playData.questVotes || {};
-                    if (qVotes[myUserId]) { [document.getElementById('btnQuestSuccess'), document.getElementById('btnQuestFail')].forEach(b => { b.disabled = true; b.style.opacity = 0.5; }); } 
-                    else {
-                        [document.getElementById('btnQuestSuccess'), document.getElementById('btnQuestFail')].forEach(b => { b.disabled = false; b.style.opacity = 1; });
-                        document.getElementById('btnQuestSuccess').onclick = () => set(ref(db, `rooms/${currentRoomId}/playData/questVotes/${myUserId}`), 'success');
-                        document.getElementById('btnQuestFail').onclick = () => set(ref(db, `rooms/${currentRoomId}/playData/questVotes/${myUserId}`), 'fail');
+                    if (qVotes[myUserId]) {
+                        document.getElementById('btnQuestSuccess').disabled = true;
+                        document.getElementById('btnQuestFail').disabled = true;
+                        document.getElementById('btnQuestSuccess').style.opacity = 0.5;
+                        document.getElementById('btnQuestFail').style.opacity = 0.5;
+                        statusText.innerText = "다른 대원들의 임무 수행을 기다리고 있습니다.";
+                    } else {
+                        document.getElementById('btnQuestSuccess').disabled = false;
+                        document.getElementById('btnQuestFail').disabled = false;
+                        document.getElementById('btnQuestSuccess').style.opacity = 1;
+                        document.getElementById('btnQuestFail').style.opacity = 1;
+                        statusText.innerText = "신중하게 임무 결과를 선택해 주십시오.";
+
+                        document.getElementById('btnQuestSuccess').onclick = () => { set(ref(db, `rooms/${currentRoomId}/playData/questVotes/${myUserId}`), 'success'); };
+                        document.getElementById('btnQuestFail').onclick = () => { set(ref(db, `rooms/${currentRoomId}/playData/questVotes/${myUserId}`), 'fail'); };
                     }
-                } else statusText.innerText = "원정대 임무 수행 중...";
+                } else {
+                    statusText.innerHTML = `선택된 원정대원들이 임무를 수행 중입니다...<br>결과를 기다려주세요.`;
+                }
+
                 const qVotes = playData.questVotes || {};
-                if (isHost && Object.keys(qVotes).length === requiredSize) resolveQuestVoting(playData, qVotes, requiredSize, totalPlayers);
+                const currentQuestVoteCount = Object.keys(qVotes).length;
+                
+                if (isHost && currentQuestVoteCount === requiredSize) {
+                    resolveQuestVoting(playData, qVotes, requiredSize, totalPlayers);
+                }
             }
             else if (currentGameState === "quest_result") {
                 document.getElementById('questResultArea').classList.remove('hidden');
+                statusText.innerText = "방금 수행된 원정의 결과입니다.";
+
                 const qVotes = playData.questVotes || {};
                 let sCount = 0; let fCount = 0;
-                Object.values(qVotes).forEach(v => { if (v === 'fail') fCount++; else sCount++; });
+                Object.values(qVotes).forEach(v => { if (v === 'success') sCount++; else fCount++; });
+
                 const summaryEl = document.getElementById('questResultSummary');
                 const msgEl = document.getElementById('questResultMessage');
-                summaryEl.innerHTML = `<span class="text-secondary">${sCount} S</span> <span class="text-on-surface-variant/20">/</span> <span class="text-error">${fCount} F</span>`;
+                
+                summaryEl.innerHTML = `<span style="color:var(--success)">성공: ${sCount}개</span> / <span style="color:var(--danger)">실패: ${fCount}개</span>`;
+
                 const isFailed = (questResults[currentQuestIndex] === 'fail');
-                msgEl.innerText = isFailed ? "원정 실패" : "원정 성공!";
-                msgEl.className = `text-lg font-headline font-extrabold ${isFailed ? 'text-error' : 'text-secondary'}`;
+                
+                if (isFailed) {
+                    msgEl.innerText = "원정에 실패했습니다...";
+                    msgEl.style.color = "var(--danger)";
+                } else {
+                    msgEl.innerText = "원정에 성공했습니다!";
+                    msgEl.style.color = "var(--success)";
+                }
             }
         }
 
@@ -752,36 +832,66 @@
             let approveCount = 0;
             Object.values(votes).forEach(v => { if (v === 'approve') approveCount++; });
             const isApproved = approveCount > (totalPlayers / 2);
+
             const updates = {};
-            if (isApproved) { updates[`rooms/${currentRoomId}/gameState`] = "quest_voting"; updates[`rooms/${currentRoomId}/playData/voteTrack`] = 0; updates[`rooms/${currentRoomId}/playData/questVotes`] = null; } 
-            else {
+            if (isApproved) {
+                updates[`rooms/${currentRoomId}/gameState`] = "quest_voting"; 
+                updates[`rooms/${currentRoomId}/playData/voteTrack`] = 0;
+                updates[`rooms/${currentRoomId}/playData/questVotes`] = null; 
+            } else {
                 const newTrack = (playData.voteTrack || 0) + 1;
-                if (newTrack >= 5) { updates[`rooms/${currentRoomId}/gameState`] = "game_over"; updates[`rooms/${currentRoomId}/playData/voteTrack`] = newTrack; } 
-                else { updates[`rooms/${currentRoomId}/gameState`] = "team_building"; updates[`rooms/${currentRoomId}/playData/leaderIndex`] = (playData.leaderIndex + 1) % totalPlayers; updates[`rooms/${currentRoomId}/playData/voteTrack`] = newTrack; }
+                // [수정] 5연속 부결 시 voteTrack 데이터를 정상적으로 5로 업데이트하여 명확한 종료 사유 출력
+                if (newTrack >= 5) {
+                    updates[`rooms/${currentRoomId}/gameState`] = "game_over";
+                    updates[`rooms/${currentRoomId}/playData/voteTrack`] = newTrack;
+                } else {
+                    updates[`rooms/${currentRoomId}/gameState`] = "team_building";
+                    updates[`rooms/${currentRoomId}/playData/leaderIndex`] = (playData.leaderIndex + 1) % totalPlayers;
+                    updates[`rooms/${currentRoomId}/playData/voteTrack`] = newTrack;
+                }
             }
-            updates[`rooms/${currentRoomId}/playData/teamVotes`] = null; update(ref(db), updates);
+            updates[`rooms/${currentRoomId}/playData/teamVotes`] = null; 
+            update(ref(db), updates);
         }
 
         function resolveQuestVoting(playData, questVotes, requiredSize, totalPlayers) {
             let successCount = 0; let failCount = 0;
             Object.values(questVotes).forEach(v => { if (v === 'fail') failCount++; else successCount++; });
+
             const currentQuestIndex = playData.currentQuest || 0;
-            const isQuestFailed = (totalPlayers >= 7 && currentQuestIndex === 3) ? (failCount >= 2) : (failCount >= 1);
+            let requiresTwoFails = false;
+            if (totalPlayers >= 7 && currentQuestIndex === 3) {
+                requiresTwoFails = true;
+            }
+
+            const isQuestFailed = requiresTwoFails ? (failCount >= 2) : (failCount >= 1);
             const questResult = isQuestFailed ? 'fail' : 'success';
-            const currentResults = playData.questResults || []; currentResults[currentQuestIndex] = questResult;
-            const currentDetails = playData.questDetails || []; currentDetails[currentQuestIndex] = { s: successCount, f: failCount };
-            const updates = { [`rooms/${currentRoomId}/playData/questResults`]: currentResults, [`rooms/${currentRoomId}/playData/questDetails`]: currentDetails, [`rooms/${currentRoomId}/gameState`]: "quest_result" };
+
+            const currentResults = playData.questResults || [];
+            currentResults[currentQuestIndex] = questResult;
+            
+            const currentDetails = playData.questDetails || [];
+            currentDetails[currentQuestIndex] = { s: successCount, f: failCount };
+
+            const updates = {};
+            updates[`rooms/${currentRoomId}/playData/questResults`] = currentResults;
+            updates[`rooms/${currentRoomId}/playData/questDetails`] = currentDetails;
+            updates[`rooms/${currentRoomId}/gameState`] = "quest_result";
             update(ref(db), updates);
+            
             setTimeout(() => processNextRound(currentResults, playData, totalPlayers), 5000);
         }
 
         function processNextRound(results, playData, totalPlayers) {
             let successCount = results.filter(r => r === 'success').length;
             let failCount = results.filter(r => r === 'fail').length;
+
             const updates = {};
-            if (successCount >= 3) updates[`rooms/${currentRoomId}/gameState`] = "assassin_phase"; 
-            else if (failCount >= 3) updates[`rooms/${currentRoomId}/gameState`] = "game_over"; 
-            else {
+            if (successCount >= 3) {
+                updates[`rooms/${currentRoomId}/gameState`] = "assassin_phase"; 
+            } else if (failCount >= 3) {
+                updates[`rooms/${currentRoomId}/gameState`] = "game_over"; 
+            } else {
                 updates[`rooms/${currentRoomId}/gameState`] = "team_building";
                 updates[`rooms/${currentRoomId}/playData/currentQuest`] = (playData.currentQuest || 0) + 1;
                 updates[`rooms/${currentRoomId}/playData/leaderIndex`] = (playData.leaderIndex + 1) % totalPlayers;
@@ -805,7 +915,9 @@
             const nickname = document.getElementById('nicknameInput').value.trim();
             if (!nickname) return;
             const roomId = Math.floor(1000 + Math.random() * 9000).toString();
-            set(ref(db, `rooms/${roomId}`), { createdAt: Date.now(), gameState: "lobby" }).then(() => joinRoomLogic(roomId, nickname));
+            set(ref(db, `rooms/${roomId}`), { createdAt: Date.now(), gameState: "lobby" }).then(() => {
+                joinRoomLogic(roomId, nickname);
+            });
         });
 
         document.getElementById('joinRoomBtn').addEventListener('click', () => {
@@ -850,6 +962,7 @@
                 if (includeOberon) { roles.push("Oberon"); evilSlots--; }
 
                 if (evilSlots < 0) return alert("선택한 '모드레드의 수하' 특수 직업 수가 너무 많습니다. 인원수를 늘리거나 특수 직업을 해제하세요.");
+
                 if (includePercival) { roles.push("Percival"); goodSlots--; }
                 if (goodSlots < 0) return alert("선택한 '아서왕의 수하' 특수 직업 수가 너무 많습니다.");
 
