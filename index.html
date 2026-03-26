@@ -66,7 +66,6 @@
             color: rgba(255, 255, 255, 0.3); pointer-events: none; z-index: 9999;
         }
 
-        /* 커스텀 스크롤바 (모바일/PC 공통 영역) */
         ::-webkit-scrollbar { height: 6px; width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
@@ -201,7 +200,7 @@
 
                 <div id="gameOverArea" class="hidden" style="margin-bottom: 15px; padding: 15px; border-radius: 8px; background: rgba(207, 102, 121, 0.1); border: 1px solid var(--danger);">
                     <h3 style="color: var(--danger); border-bottom: none; margin-bottom:5px;">게임 종료</h3>
-                    <p id="gameOverReason" style="font-weight:bold; margin-bottom:15px;"></p>
+                    <p id="gameOverReason" style="font-weight:bold; margin-bottom:15px; font-size: 18px;"></p>
                     
                     <div id="finalRoleReveal" style="text-align:left; background:rgba(0,0,0,0.3); padding:15px; border-radius:8px; border: 1px solid #444;">
                         <h4 style="margin-top:0; color:var(--accent); text-align:center;">전체 플레이어 정체</h4>
@@ -218,7 +217,7 @@
         <button id="leaveRoomBtn" class="btn-danger" style="margin-top:20px;">방 완전히 나가기</button>
     </div>
 
-    <div id="versionWatermark">v1.0</div>
+    <div id="versionWatermark">v1.0.1</div>
 
     <script type="module">
         import { db } from "./firebase-config.js";
@@ -261,7 +260,6 @@
             toggleIcon.innerText = roleSummaryContent.classList.contains('show') ? '▲' : '▼';
         });
 
-        // [신규] 24시간이 경과한 오래된 방 청소 (Garbage Collection)
         function cleanupOldRooms() {
             const now = Date.now();
             const ONE_DAY = 24 * 60 * 60 * 1000;
@@ -283,7 +281,6 @@
         }
 
         window.onload = () => {
-            // 사이트 접속 시 찌꺼기 데이터 자동 청소
             cleanupOldRooms();
 
             const savedSession = localStorage.getItem('avalon_session');
@@ -502,12 +499,11 @@
         function renderGamePhase(playData) {
             if (!playData || currentGameState === "lobby") return;
 
-            // [신규] 기회(부결 횟수)를 명확하게 표시하는 로직
             const voteTrackText = document.getElementById('voteTrackArea');
             if (playData.voteTrack !== undefined) {
                 const currentAttempt = playData.voteTrack + 1;
-                if (currentAttempt === 5) {
-                    voteTrackText.innerHTML = `<span style="color:#ff5252;">⚠️ 마지막 5번째 제안입니다! (부결 시 악 진영 승리)</span>`;
+                if (currentAttempt >= 5) {
+                    voteTrackText.innerHTML = `<span style="color:#ff5252;">⚠️ 마지막 5번째 제안입니다! (부결 시 악 진영 즉시 승리)</span>`;
                     voteTrackText.style.borderColor = "#ff5252";
                 } else {
                     voteTrackText.innerHTML = `<span style="color:#e0e0e0;">현재 <b>${currentAttempt}</b>번째 원정대 제안 (부결 시 ${5 - currentAttempt}번 기회 남음)</span>`;
@@ -516,8 +512,6 @@
             }
 
             const currentQuestIndex = playData.currentQuest || 0;
-            const leaderId = playData.playerOrder[playData.leaderIndex];
-            const leaderName = globalPlayersData[leaderId] ? globalPlayersData[leaderId].nickname : "알 수 없음";
             const totalPlayers = playData.playerOrder.length;
             const requiredSize = QUEST_CAPACITY[totalPlayers][currentQuestIndex];
 
@@ -549,18 +543,24 @@
                 }
             }
 
-            // [신규] 원정대장 순서 시각화 렌더링
-            const leaderHtml = playData.playerOrder.map((id, idx) => {
+            // [신규] 원정대장 순서를 현재 대장(leaderIndex) 기준으로 회전시켜 항상 첫 번째로 렌더링
+            const leaderIdx = playData.leaderIndex || 0;
+            const orderedPlayers = [
+                ...playData.playerOrder.slice(leaderIdx),
+                ...playData.playerOrder.slice(0, leaderIdx)
+            ];
+
+            const leaderHtml = orderedPlayers.map((id, idx) => {
                 const name = globalPlayersData[id] ? globalPlayersData[id].nickname : "알 수 없음";
-                if (idx === playData.leaderIndex) {
+                if (idx === 0) {
                     return `<span style="color:#ff9800; font-weight:bold; border-bottom: 2px solid #ff9800; padding-bottom: 2px;">👑${name}</span>`;
                 }
                 return `<span style="color:#888;">${name}</span>`;
             }).join(' <span style="color:#555; font-size:10px; margin: 0 4px;">▶</span> ');
 
             document.getElementById('leaderAnnouncement').innerHTML = `
-                <div style="margin-bottom:10px; font-size:15px; font-weight:bold;">현재 원정대장: <span style="color:#fff;">${leaderName}</span></div>
-                <div style="font-size:12px; overflow-x:auto; white-space:nowrap; padding: 10px; background: rgba(0,0,0,0.3); border-radius:6px; border: 1px solid #444;">
+                <div style="margin-bottom:10px; font-size:14px; font-weight:bold; color: #fff;">원정대장 진행 순서</div>
+                <div style="font-size:13px; overflow-x:auto; white-space:nowrap; padding: 10px; background: rgba(0,0,0,0.3); border-radius:6px; border: 1px solid #444;">
                     ${leaderHtml}
                 </div>
             `;
@@ -579,20 +579,21 @@
                 document.getElementById('gameOverArea').classList.remove('hidden');
                 let reasonText = "";
                 
+                // [수정] 명확한 승패 텍스트 반영
                 if (playData.voteTrack >= 5) {
-                    reasonText = "원정대 투표가 5회 연속 부결되었습니다. 악의 승리입니다!";
+                    reasonText = "원정대 투표가 5회 연속 부결되었습니다. 악 진영이 최종 승리했습니다!";
                 } else if (questResults.filter(r => r === 'fail').length >= 3) {
-                    reasonText = "원정 실패가 3회 누적되었습니다. 악의 승리입니다!";
+                    reasonText = "원정 실패가 3회 누적되었습니다. 악 진영이 최종 승리했습니다!";
                 } else if (playData.assassinatedTarget) {
                     const targetRole = globalPlayersData[playData.assassinatedTarget].role;
                     const targetName = globalPlayersData[playData.assassinatedTarget].nickname;
                     if (targetRole === "Merlin") {
-                        reasonText = `암살자가 멀린(${targetName})을 정확히 암살했습니다. 악의 역전승입니다!`;
+                        reasonText = `암살자가 멀린(${targetName})을 정확히 암살했습니다. 악 진영의 역전승입니다!`;
                     } else {
-                        reasonText = `암살자가 잘못된 대상(${targetName})을 암살했습니다. 선 진영의 최종 승리입니다!`;
+                        reasonText = `암살자가 잘못된 대상(${targetName})을 암살했습니다. 선 진영이 최종 승리했습니다!`;
                     }
                 } else {
-                    reasonText = "진영 승리 조건이 달성되었습니다.";
+                    reasonText = "선 진영이 원정 3회를 성공시켜 최종 승리했습니다!";
                 }
 
                 document.getElementById('gameOverReason').innerText = reasonText;
@@ -658,7 +659,8 @@
             }
 
             if (currentGameState === "team_building") {
-                if (myUserId === leaderId) {
+                const leaderIdObj = playData.playerOrder[playData.leaderIndex];
+                if (myUserId === leaderIdObj) {
                     document.getElementById('teamSelectionArea').classList.remove('hidden');
                     document.getElementById('requiredTeamSize').innerText = requiredSize;
                     statusText.innerText = "당신이 원정대장입니다. 원정대원을 구성해주세요.";
@@ -695,12 +697,14 @@
                         }
                     };
                 } else {
-                    statusText.innerHTML = `원정대장 <b>${leaderName}</b>님이 원정대를 구성하고 있습니다...<br>토론을 통해 의견을 나누세요.`;
+                    const currentLeaderName = globalPlayersData[leaderIdObj] ? globalPlayersData[leaderIdObj].nickname : "원정대장";
+                    statusText.innerHTML = `원정대장 <b>${currentLeaderName}</b>님이 원정대를 구성하고 있습니다...<br>토론을 통해 의견을 나누세요.`;
                 }
             } 
             else if (currentGameState === "team_voting") {
                 document.getElementById('teamVotingArea').classList.remove('hidden');
-                document.getElementById('votingLeaderName').innerText = leaderName;
+                const leaderIdObj = playData.playerOrder[playData.leaderIndex];
+                document.getElementById('votingLeaderName').innerText = globalPlayersData[leaderIdObj] ? globalPlayersData[leaderIdObj].nickname : "알 수 없음";
                 
                 const proposedTeamList = document.getElementById('proposedTeamList');
                 proposedTeamList.innerHTML = '';
@@ -834,8 +838,10 @@
                 updates[`rooms/${currentRoomId}/playData/questVotes`] = null; 
             } else {
                 const newTrack = (playData.voteTrack || 0) + 1;
+                // [수정] 5연속 부결 시 voteTrack 데이터를 정상적으로 5로 업데이트하여 명확한 종료 사유 출력
                 if (newTrack >= 5) {
                     updates[`rooms/${currentRoomId}/gameState`] = "game_over";
+                    updates[`rooms/${currentRoomId}/playData/voteTrack`] = newTrack;
                 } else {
                     updates[`rooms/${currentRoomId}/gameState`] = "team_building";
                     updates[`rooms/${currentRoomId}/playData/leaderIndex`] = (playData.leaderIndex + 1) % totalPlayers;
