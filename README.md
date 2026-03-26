@@ -40,7 +40,7 @@
 
 1. **저장소 클론**
    ```bash
-   git clone [https://github.com/saintation/resistance-avalon.git](https://github.com/saintaiton/resistance-avalon.git)
+   git clone https://github.com/saintation/resistance-avalon.git
    cd 저장소이름
 
 2. Firebase 프로젝트 설정
@@ -51,8 +51,8 @@
 3. firebase-config.js 파일 생성
 * 프로젝트 루트 디렉토리에 firebase-config.js 파일을 생성하고 아래 양식에 맞게 본인의 키 값을 입력합니다.
   ```java script
-  import { initializeApp } from "[https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js](https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js)";
-  import { getDatabase } from "[https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js](https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js)";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+  import { getDatabase } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
   const firebaseConfig = {
       apiKey: "YOUR_API_KEY",
