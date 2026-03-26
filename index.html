@@ -61,7 +61,6 @@
         
         #hostSettings { margin-bottom: 15px; text-align: left; background: rgba(255,152,0,0.1); border: 1px solid #ff9800; padding: 15px; border-radius: 8px; }
         
-        /* [신규] 추천 뱃지 스타일 */
         .rec-badge { 
             font-size: 11px; background-color: var(--success); color: #000; 
             padding: 2px 6px; border-radius: 4px; margin-left: auto; font-weight: bold; display: none; 
@@ -134,6 +133,14 @@
                 </div>
 
                 <div id="questTrackerContainer" style="margin-bottom:20px;">
+                    <div id="questInfo" style="display:flex; justify-content:space-around; font-size:11px; color:#aaa; margin-bottom:8px; line-height: 1.2;">
+                        <div id="questInfo1" style="width:20%;"></div>
+                        <div id="questInfo2" style="width:20%;"></div>
+                        <div id="questInfo3" style="width:20%;"></div>
+                        <div id="questInfo4" style="width:20%;"></div>
+                        <div id="questInfo5" style="width:20%;"></div>
+                    </div>
+
                     <div id="questTracker" style="display:flex; justify-content:space-around; margin-bottom:5px;">
                         <div style="width:20%;"><div class="quest-circle" id="quest1">1</div></div>
                         <div style="width:20%;"><div class="quest-circle" id="quest2">2</div></div>
@@ -221,10 +228,10 @@
             </div>
         </div>
 
-        <button id="leaveRoomBtn" class="btn-danger" style="margin-top:20px;">방 완전히 나가기</button>
+        <button id="leaveRoomBtn" class="btn-danger" style="margin-top:20px;">Exit</button>
     </div>
 
-    <div id="versionWatermark">v1.0.2</div>
+    <div id="versionWatermark">v1.0.3</div>
 
     <script type="module">
         import { db } from "./firebase-config.js";
@@ -320,6 +327,7 @@
             document.getElementById('gameStatusText').innerText = '';
             
             for(let i=1; i<=5; i++) {
+                document.getElementById(`questInfo${i}`).innerHTML = '';
                 document.getElementById(`quest${i}`).className = 'quest-circle';
                 document.getElementById(`quest${i}`).style = '';
                 document.getElementById(`questDetail${i}`).innerHTML = '';
@@ -392,7 +400,6 @@
                     startGameBtn.classList.remove('hidden');
                     const allOnline = Object.values(globalPlayersData).every(p => p.isOnline !== false);
                     
-                    // [신규] 인원수별 추천 직업 표시 로직
                     const recPercival = document.getElementById('recPercival');
                     const recMorgana = document.getElementById('recMorgana');
                     const recMordred = document.getElementById('recMordred');
@@ -551,6 +558,12 @@
             const questDetails = playData.questDetails || [];
             
             for(let i=0; i<5; i++) {
+                // [신규] 원정 단계별 인원 및 실패 조건 텍스트 추가
+                const qSize = QUEST_CAPACITY[totalPlayers][i];
+                const reqTwoFails = (totalPlayers >= 7 && i === 3);
+                const failText = reqTwoFails ? "실패 2표" : "실패 1표";
+                document.getElementById(`questInfo${i+1}`).innerHTML = `<b>${qSize}인</b><br><span style="font-size:9px; color:var(--danger);">${failText}</span>`;
+
                 const qCircle = document.getElementById(`quest${i+1}`);
                 qCircle.className = 'quest-circle'; 
                 qCircle.style = ''; 
