@@ -40,7 +40,7 @@
 
 1. **저장소 클론**
    ```bash
-   git clone [https://github.com/본인계정/저장소이름.git](https://github.com/본인계정/저장소이름.git)
+   git clone [https://github.com/saintation/resistance-avalon.git](https://github.com/saintaiton/resistance-avalon.git)
    cd 저장소이름
 
 2. Firebase 프로젝트 설정
