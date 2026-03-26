@@ -13,7 +13,7 @@ test.describe.serial('레지스탕스 아발론 자동화 봇 시뮬레이션 (5
       const context = await browser.newContext();
       const page = await context.newPage();
       
-      // 경고창(Alert, Confirm) 무조건 자동 수락
+      // 경고창(Alert, Confirm) 무조건 자동 수락 방어 코드
       page.on('dialog', async dialog => {
         try { await dialog.accept(); } catch(e) {}
       });
@@ -79,7 +79,7 @@ test.describe.serial('레지스탕스 아발론 자동화 봇 시뮬레이션 (5
       await hostPage.locator('#startGameBtn').click({ force: true });
       await expect(hostPage.locator('#playArea')).not.toHaveClass(/hidden/);
 
-      // [추가] 닉네임별 직업 매핑 객체 (암살자 표적 필터링에 사용)
+      // 닉네임별 직업 매핑 객체 (암살자 표적 필터링에 사용)
       let roleMap: Record<string, string> = {};
 
       console.log(`\n🎭 [직업 배정 결과]`);
@@ -178,10 +178,11 @@ test.describe.serial('레지스탕스 아발론 자동화 봇 시뮬레이션 (5
           }
         }
         if (needsTeamVote) {
-          console.log(`   🗳️ [투표 진행] 전체 플레이어가 원정대 승인 여부를 무작위로 투표합니다.`);
+          console.log(`   🗳️ [투표 진행] 전체 플레이어가 원정대 승인 여부를 투표합니다.`);
           for (const p of pages) {
             if (await p.locator('#teamVotingArea').isVisible() && await p.locator('#btnApprove').isEnabled()) {
-              if (Math.random() < 0.5) await p.locator('#btnApprove').click({ force: true });
+              // [변경] 찬성 확률 60% 적용
+              if (Math.random() < 0.60) await p.locator('#btnApprove').click({ force: true });
               else await p.locator('#btnReject').click({ force: true });
             }
           }
@@ -219,19 +220,17 @@ test.describe.serial('레지스탕스 아발론 자동화 봇 시뮬레이션 (5
         if (assassinPage) {
           console.log(`   🗡️ [암살자 대기] 암살자가 선 진영(아서왕의 수하) 중 한 명을 멀린으로 추리하여 지목합니다...`);
           
-          // 브라우저 내부에서 선 진영인 옵션만 필터링하여 선택
           const targetIndex = await assassinPage.evaluate((map) => {
             const select = document.getElementById('assassinTargetSelect') as HTMLSelectElement;
             const validIndices = [];
             for (let i = 1; i < select.options.length; i++) {
               const nickname = select.options[i].text;
               const role = map[nickname] || "";
-              // 악 진영(모드레드의 수하) 제외, 선 진영(아서왕의 수하)만 후보로 지정
               if (role.includes('아서왕의 수하')) {
                 validIndices.push(i);
               }
             }
-            if (validIndices.length === 0) return 1; // Fallback
+            if (validIndices.length === 0) return 1; 
             return validIndices[Math.floor(Math.random() * validIndices.length)];
           }, roleMap);
 
