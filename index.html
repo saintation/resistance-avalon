@@ -221,8 +221,8 @@
 
     <script type="module">
         import { db } from "./firebase-config.js";
-        import { ref, set, get, onValue, update, onDisconnect } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
-
+        import { ref, set, get, onValue, update, onDisconnect, query, orderByChild, endAt } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+        
         const lobbyScreen = document.getElementById('lobbyScreen');
         const gameScreen = document.getElementById('gameScreen');
         const waitingArea = document.getElementById('waitingArea');
@@ -261,24 +261,22 @@
         });
 
         function cleanupOldRooms() {
-            const now = Date.now();
-            const ONE_DAY = 24 * 60 * 60 * 1000;
-            
-            get(ref(db, 'rooms')).then((snapshot) => {
-                if (snapshot.exists()) {
-                    const updates = {};
-                    snapshot.forEach((child) => {
-                        const roomData = child.val();
-                        if (roomData.createdAt && (now - roomData.createdAt > ONE_DAY)) {
-                            updates[`rooms/${child.key}`] = null;
-                        }
-                    });
-                    if (Object.keys(updates).length > 0) {
-                        update(ref(db), updates).catch(() => {});
-                    }
-                }
-            }).catch(() => {});
+    const ONE_DAY = 24 * 60 * 60 * 1000;
+    const cutoffTime = Date.now() - ONE_DAY;
+    
+    // 24시간이 지난 방만 서버에 요청하여 대역폭 낭비 방지
+    const oldRoomsQuery = query(ref(db, 'rooms'), orderByChild('createdAt'), endAt(cutoffTime));
+    
+    get(oldRoomsQuery).then((snapshot) => {
+        if (snapshot.exists()) {
+            const updates = {};
+            snapshot.forEach((child) => {
+                updates[`rooms/${child.key}`] = null;
+            });
+            update(ref(db), updates).catch(() => {});
         }
+    }).catch(() => {});
+}
 
         window.onload = () => {
             cleanupOldRooms();
