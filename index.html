@@ -56,37 +56,16 @@
         ::-webkit-scrollbar { height: 6px; width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
-
-        /* [수정] 관리자 버튼 UI 완벽 고정 */
-        #adminLoginBtn { 
-            position: fixed; 
-            top: 15px; 
-            right: 15px; 
-            z-index: 9999; 
-            background: rgba(0, 0, 0, 0.6); 
-            border: 1px solid #444; 
-            border-radius: 8px; 
-            cursor: pointer; 
-            padding: 8px 12px; 
-            color: #fff; 
-            font-size: 14px;
-            font-weight: bold;
-            backdrop-filter: blur(5px);
-            transition: all 0.3s;
-        }
-        #adminLoginBtn:hover { background: rgba(0, 0, 0, 0.9); border-color: #ff9800; }
     </style>
 </head>
 <body>
-    <button id="adminLoginBtn" title="관리자 로그인">🔒 관리자 로그인</button>
-
     <h1>아발론: 온라인</h1>
 
     <div id="lobbyScreen" class="container">
         <h3>대기실</h3>
         <input type="text" id="nicknameInput" placeholder="닉네임 입력" maxlength="8"/>
         <input type="text" id="roomCodeInput" placeholder="방 코드 4자리 (입장시)" maxlength="4" />
-        <button id="createRoomBtn" class="btn-accent hidden" style="background-color: #ff9800; color:#000;">👑 새로운 방 만들기 (관리자 전용)</button>
+        <button id="createRoomBtn" class="btn-accent" style="background-color: #ff9800; color:#000;">👑 새로운 방 만들기 (관리자 전용)</button>
         <button id="joinRoomBtn" class="btn-accent">기존 방 입장하기</button>
     </div>
 
@@ -175,12 +154,11 @@
         <button id="leaveRoomBtn" class="btn-danger" style="margin-top:20px;">Exit</button>
     </div>
 
-    <div id="versionWatermark">v1.1.0</div>
+    <div id="versionWatermark">v1.1.1</div>
 
     <script type="module">
-        import { db, auth } from "./firebase-config.js";
+        import { db } from "./firebase-config.js";
         import { ref, set, get, onValue, update, onDisconnect, query, orderByChild, endAt } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
-        import { signInWithRedirect, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
         const lobbyScreen = document.getElementById('lobbyScreen');
         const gameScreen = document.getElementById('gameScreen');
@@ -193,9 +171,6 @@
         const roleSummaryContent = document.getElementById('roleSummaryContent');
         const toggleIcon = document.getElementById('toggleIcon');
         const hostSettings = document.getElementById('hostSettings');
-        
-        const createRoomBtn = document.getElementById('createRoomBtn');
-        const adminLoginBtn = document.getElementById('adminLoginBtn');
 
         let currentRoomId = null;
         let myUserId = null;
@@ -205,68 +180,16 @@
         let currentPlayData = null;
         let gameStateCleanup = null;
         let playDataCleanup = null;
-        let loggedInUserUid = null;
 
         const QUEST_CAPACITY = { 5: [2,3,2,3,3], 6: [2,3,4,3,4], 7: [2,3,3,4,4], 8: [3,4,4,5,5], 9: [3,4,4,5,5], 10: [3,4,4,5,5] };
         const generateUserId = () => 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-
-        // [핵심 1] 세션 유지(Persistence) 강제 설정 후 인증 상태 구독
-        setPersistence(auth, browserLocalPersistence).then(() => {
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    loggedInUserUid = user.uid;
-                    get(ref(db, `admins/${user.uid}`)).then((snapshot) => {
-                        if (snapshot.exists() && snapshot.val() === true) {
-                            createRoomBtn.classList.remove('hidden');
-                            adminLoginBtn.innerText = "🔓 로그아웃";
-                            cleanupOldRooms(); 
-                        } else {
-                            createRoomBtn.classList.add('hidden');
-                            adminLoginBtn.innerText = "🔒 일반 계정 (로그아웃)";
-                        }
-                    }).catch(e => console.error("권한 조회 실패:", e));
-                } else {
-                    loggedInUserUid = null;
-                    createRoomBtn.classList.add('hidden');
-                    adminLoginBtn.innerText = "🔒 관리자 로그인";
-                }
-            });
-        });
-
-        // [핵심 2] 리다이렉트 후 원래 페이지로 돌아왔을 때 세션 잡기
-        getRedirectResult(auth).then((result) => {
-            if (result) {
-                const uid = result.user.uid;
-                console.log("로그인 성공 UID:", uid);
-                get(ref(db, `admins/${uid}`)).then((snapshot) => {
-                    if (!snapshot.exists() || snapshot.val() !== true) {
-                        alert(`관리자 권한이 없습니다.\n\n현재 계정 UID:\n${uid}\n\n이 값을 DB의 admins 노드 하위에 추가해주세요.`);
-                    }
-                });
-            }
-        }).catch((error) => {
-            console.error("로그인 에러 상세:", error);
-            // 크롬의 서드파티 제한 에러인 경우 사용자에게 안내
-            if(error.code && error.code.includes('auth/redirect-cancelled-by-user') === false) {
-                 alert("브라우저 보안(서드파티 쿠키 차단)으로 인해 깃허브 페이지에서 로그인이 실패했습니다.\n이 브라우저에서는 관리자 로그인이 불가할 수 있습니다.");
-            }
-        });
-
-        // [핵심 3] 로그인/로그아웃 버튼 클릭 이벤트
-        adminLoginBtn.addEventListener('click', () => {
-            if (loggedInUserUid) {
-                if (confirm("로그아웃 하시겠습니까?")) signOut(auth);
-            } else {
-                const provider = new GoogleAuthProvider();
-                signInWithRedirect(auth, provider);
-            }
-        });
 
         toggleRoleBtn.addEventListener('click', () => {
             roleSummaryContent.classList.toggle('show');
             toggleIcon.innerText = roleSummaryContent.classList.contains('show') ? '▲' : '▼';
         });
 
+        // 클라이언트 구동 시 가비지 컬렉션 시도 (방 삭제 권한 활용)
         function cleanupOldRooms() {
             const cutoffTime = Date.now() - (24 * 60 * 60 * 1000);
             get(query(ref(db, 'rooms'), orderByChild('createdAt'), endAt(cutoffTime))).then((snapshot) => {
@@ -279,6 +202,7 @@
         }
 
         window.onload = () => {
+            cleanupOldRooms();
             const savedSession = localStorage.getItem('avalon_session');
             if (savedSession) {
                 const sessionData = JSON.parse(savedSession);
@@ -574,10 +498,26 @@
             });
         }
 
+        // [수정] 방 생성 로직에 비밀번호 프롬프트 적용
         document.getElementById('createRoomBtn').addEventListener('click', () => {
-            const nickname = document.getElementById('nicknameInput').value.trim(); if (!nickname) return;
+            const nickname = document.getElementById('nicknameInput').value.trim(); 
+            if (!nickname) return alert("닉네임을 먼저 입력해 주세요.");
+            
+            const adminKey = prompt("방 생성 권한을 위한 관리자 비밀번호를 입력하세요:");
+            if (!adminKey) return;
+
             const roomId = Math.floor(1000 + Math.random() * 9000).toString();
-            set(ref(db, `rooms/${roomId}`), { createdAt: Date.now(), gameState: "lobby" }).then(() => { joinRoomLogic(roomId, nickname); });
+            
+            set(ref(db, `rooms/${roomId}`), { 
+                createdAt: Date.now(), 
+                gameState: "lobby",
+                adminKey: adminKey 
+            }).then(() => { 
+                joinRoomLogic(roomId, nickname); 
+            }).catch((err) => {
+                console.error(err);
+                alert("비밀번호가 틀렸거나 방 생성 권한이 거부되었습니다.");
+            });
         });
 
         document.getElementById('joinRoomBtn').addEventListener('click', () => {
