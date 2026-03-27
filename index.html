@@ -56,6 +56,11 @@
         ::-webkit-scrollbar { height: 6px; width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
+
+        /* 커스텀 모달창 CSS (비밀번호 입력용) */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; justify-content: center; align-items: center; }
+        .modal-overlay:not(.hidden) { display: flex !important; }
+        .modal-content { background: var(--card-bg); padding: 25px; border-radius: 12px; border: 1px solid #444; width: 90%; max-width: 320px; box-sizing: border-box; }
     </style>
 </head>
 <body>
@@ -65,8 +70,24 @@
         <h3>대기실</h3>
         <input type="text" id="nicknameInput" placeholder="닉네임 입력" maxlength="8"/>
         <input type="text" id="roomCodeInput" placeholder="방 코드 4자리 (입장시)" maxlength="4" />
-        <button id="createRoomBtn" class="btn-accent" style="background-color: #ff9800; color:#000;">👑 새로운 방 만들기 (관리자 전용)</button>
-        <button id="joinRoomBtn" class="btn-accent">기존 방 입장하기</button>
+        
+        <button id="joinRoomBtn" class="btn-accent" style="margin-bottom: 5px;">방 입장하기</button>
+        
+        <div style="border-top: 1px solid #333; margin: 15px 0;"></div>
+        
+        <button id="createRoomBtn" style="background: transparent; color: #888; border: 1px solid #444; font-size: 13px; padding: 10px; transition: all 0.2s;">방 만들기</button>
+    </div>
+
+    <div id="passwordModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h4 style="margin-top: 0; color: var(--accent); margin-bottom: 5px;">방 생성 권한</h4>
+            <p style="font-size: 12px; color: #aaa; margin-bottom: 15px;">관리자 비밀번호를 입력하세요.</p>
+            <input type="password" id="adminPasswordInput" placeholder="비밀번호" style="margin-bottom: 20px; text-align: center; letter-spacing: 3px;" />
+            <div style="display: flex; gap: 10px;">
+                <button id="confirmCreateBtn" class="btn-accent" style="flex: 1; padding: 10px;">확인</button>
+                <button id="cancelCreateBtn" class="btn-danger" style="flex: 1; padding: 10px;">취소</button>
+            </div>
+        </div>
     </div>
 
     <div id="gameScreen" class="container hidden">
@@ -154,7 +175,7 @@
         <button id="leaveRoomBtn" class="btn-danger" style="margin-top:20px;">Exit</button>
     </div>
 
-    <div id="versionWatermark">v1.1.1</div>
+    <div id="versionWatermark">v1.1.2</div>
 
     <script type="module">
         import { db } from "./firebase-config.js";
@@ -171,6 +192,12 @@
         const roleSummaryContent = document.getElementById('roleSummaryContent');
         const toggleIcon = document.getElementById('toggleIcon');
         const hostSettings = document.getElementById('hostSettings');
+
+        // 모달창 UI
+        const passwordModal = document.getElementById('passwordModal');
+        const adminPasswordInput = document.getElementById('adminPasswordInput');
+        const confirmCreateBtn = document.getElementById('confirmCreateBtn');
+        const cancelCreateBtn = document.getElementById('cancelCreateBtn');
 
         let currentRoomId = null;
         let myUserId = null;
@@ -189,7 +216,6 @@
             toggleIcon.innerText = roleSummaryContent.classList.contains('show') ? '▲' : '▼';
         });
 
-        // 클라이언트 구동 시 가비지 컬렉션 시도 (방 삭제 권한 활용)
         function cleanupOldRooms() {
             const cutoffTime = Date.now() - (24 * 60 * 60 * 1000);
             get(query(ref(db, 'rooms'), orderByChild('createdAt'), endAt(cutoffTime))).then((snapshot) => {
@@ -498,13 +524,24 @@
             });
         }
 
-        // [수정] 방 생성 로직에 비밀번호 프롬프트 적용
+        // [수정] 커스텀 모달 기반 방 생성 로직
         document.getElementById('createRoomBtn').addEventListener('click', () => {
             const nickname = document.getElementById('nicknameInput').value.trim(); 
             if (!nickname) return alert("닉네임을 먼저 입력해 주세요.");
             
-            const adminKey = prompt("방 생성 권한을 위한 관리자 비밀번호를 입력하세요:");
-            if (!adminKey) return;
+            adminPasswordInput.value = '';
+            passwordModal.classList.remove('hidden');
+            adminPasswordInput.focus();
+        });
+
+        document.getElementById('cancelCreateBtn').addEventListener('click', () => {
+            passwordModal.classList.add('hidden');
+        });
+
+        document.getElementById('confirmCreateBtn').addEventListener('click', () => {
+            const nickname = document.getElementById('nicknameInput').value.trim();
+            const adminKey = adminPasswordInput.value;
+            if (!adminKey) return alert("비밀번호를 입력하세요.");
 
             const roomId = Math.floor(1000 + Math.random() * 9000).toString();
             
@@ -513,6 +550,7 @@
                 gameState: "lobby",
                 adminKey: adminKey 
             }).then(() => { 
+                passwordModal.classList.add('hidden');
                 joinRoomLogic(roomId, nickname); 
             }).catch((err) => {
                 console.error(err);
