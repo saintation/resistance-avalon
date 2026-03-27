@@ -186,7 +186,7 @@
         import { db, auth } from "./firebase-config.js";
         import { ref, set, get, onValue, update, onDisconnect, query, orderByChild, endAt } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
         // [신규] 인증 관련 함수 임포트
-        import { signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { signInWithRedirect, getRedirectResult, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
         // =========================================================
 
@@ -219,10 +219,9 @@
 
         const generateUserId = () => 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 
-        // [수정] 관리자 로그인 감지 로직 (DB 명단 조회 방식)
+        // [수정] 관리자 로그인 감지 로직 (DB 명단 조회)
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                // 내 UID가 DB의 admins 노드에 등록되어 있는지 확인
                 get(ref(db, `admins/${user.uid}`)).then((snapshot) => {
                     if (snapshot.exists() && snapshot.val() === true) {
                         createRoomBtn.classList.remove('hidden');
@@ -238,6 +237,29 @@
             } else {
                 createRoomBtn.classList.add('hidden');
             }
+        });
+
+        // [신규] 구글 로그인 화면으로 화면 이동 (팝업 대신 사용)
+        adminLoginBtn.addEventListener('click', () => {
+            const provider = new GoogleAuthProvider();
+            signInWithRedirect(auth, provider);
+        });
+
+        // [신규] 구글 로그인 후 원래 페이지로 돌아왔을 때 결과 처리
+        getRedirectResult(auth).then((result) => {
+            if (result) {
+                const uid = result.user.uid;
+                
+                // 로그인 직후 관리자 여부 체크하여 알림
+                get(ref(db, `admins/${uid}`)).then((snapshot) => {
+                    if (!snapshot.exists()) {
+                        alert(`관리자 권한이 없습니다.\n\n현재 계정의 UID:\n${uid}\n\n이 값을 복사하여 파이어베이스 DB의 'admins' 하위에 추가해주세요.`);
+                    }
+                });
+            }
+        }).catch((error) => {
+            console.error("로그인 에러:", error);
+            alert("로그인 중 오류가 발생했습니다.");
         });
 
         // [수정] 로그인 버튼 클릭 이벤트
