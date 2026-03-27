@@ -7,6 +7,39 @@
 [https://saintation.github.io/resistance-avalon/](https://saintation.github.io/resistance-avalon/)
 
 ---
+## 🎲 최신 업데이트 내역 (v1.1.2)
+
+### 🔐 보안: 관리자 전용 방 생성 시스템
+
+본 프로젝트는 Firebase 무료 요금제(Spark)의 동시 접속자 수 및 대역폭 한도를 보호하기 위해, **'방 생성 권한'**과 **'게임 참여 권한'**을 분리하여 설계했습니다.
+
+참여자는 번거로운 로그인이나 회원가입 없이 방 코드만으로 즉시 게임에 접속할 수 있지만, 무분별한 트래픽 낭비를 막기 위해 **새로운 방을 개설하는 것은 비밀번호를 아는 관리자만 가능**하도록 서버(Firebase Rules) 단에서 강력하게 통제합니다. 브라우저의 서드파티 쿠키 차단 이슈를 우회하기 위해 소셜 로그인을 배제하고, 커스텀 프롬프트 기반의 직관적인 비밀번호 검증 방식을 채택했습니다.
+
+#### ⚙️ Firebase Realtime Database 보안 규칙(Rules) 설정 방법
+
+이 시스템이 정상적으로 작동하려면 클라이언트 코드 적용 외에, Firebase 서버 측에 아래의 보안 규칙을 반드시 적용해야 합니다. 이 규칙은 악의적인 API 호출이나 비정상적인 방 생성을 원천 차단합니다.
+
+1. [Firebase Console](https://console.firebase.google.com/)에 접속하여 해당 프로젝트로 이동합니다.
+2. 좌측 메뉴에서 **[Build] -> [Realtime Database]**를 선택합니다.
+3. 상단의 **[규칙 (Rules)]** 탭을 클릭합니다.
+4. 기존 코드를 모두 지우고, 아래의 JSON 코드를 복사하여 붙여넣습니다.
+5. 코드 내의 `'원하는비밀번호'` 부분을 본인이 사용할 실제 관리자 비밀번호(영문/숫자)로 변경한 후 **[게시 (Publish)]**를 클릭합니다.
+
+```json
+{
+  "rules": {
+    "rooms": {
+      ".indexOn": ["createdAt"],
+      ".read": "true",
+      "$roomId": {
+        ".write": "(!data.exists() && newData.child('adminKey').val() === '원하는비밀번호') || (data.exists() && newData.val() != null) || (data.exists() && newData.val() == null && data.child('createdAt').val() < (now - 86400000))"
+      }
+    }
+  }
+}
+```
+
+---
 
 ## 📌 주요 기능 (Key Features)
 
@@ -78,3 +111,7 @@
 
 ## 📜 라이선스 (License)
 이 프로젝트는 오픈 소스로 제공되며 MIT License를 따릅니다. 단, 'The Resistance: Avalon'의 게임 규칙 및 원작의 상표권은 원작자(Indie Boards & Cards)에게 있습니다. 이 소프트웨어는 상업적 목적으로 사용될 수 없으며, 개인적인 친목 및 스터디 용도로만 활용되어야 합니다.
+
+---
+
+*✨ 이 프로젝트는 AI 파트너(Gemini)와 함께 **바이브코딩(Vibe Coding)**을 통해 기획, 디자인, 아키텍처 설계, 그리고 개발되었습니다.*
