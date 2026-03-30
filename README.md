@@ -7,7 +7,50 @@
 [https://saintation.github.io/resistance-avalon/](https://saintation.github.io/resistance-avalon/)
 
 ---
-## 🎲 최신 업데이트 내역 (v1.1.2)
+## 🎲 최신 업데이트 내역 (v1.2.0)
+
+### 📊 게임 이력 복기(Wrap-up) 시스템 구축
+* 마크다운 기반 타임라인: 게임 종료 후 각 라운드의 원정대장, 지목된 대원, 찬반 투표 결과 및 임무 성공/실패 여부를 마크다운 형태의 깔끔한 텍스트로 자동 기록합니다.
+* 관리자 전용 대시보드: 대기실의 '게임 이력 조회' 버튼을 통해 과거의 게임 기록을 2단 분할(Split-view) UI로 한눈에 열람할 수 있습니다.
+* 직관적인 역할 표기: 복기 화면에서는 플레이어 닉네임 옆에 (멀), (퍼), (모르), (모드), (오), (악), (선) 등 축약된 역할 태그가 표시되어 거짓말의 흐름을 쉽게 추적할 수 있습니다.
+* 이력 관리: 불필요한 과거 기록은 휴지통 아이콘을 클릭해 즉시 삭제할 수 있습니다.
+
+### ⚙️ 동시성 제어(Concurrency) 및 안정성 강화
+* 여러 플레이어가 동시에 버튼을 누를 때 발생하던 상태 전환 누락(Race Condition) 및 무한 대기(Deadlock) 버그를 원천 차단했습니다.
+* 서버 기반의 엄격한 상태 검증 로직을 도입하여 네트워크 지연 환경에서도 게임 페이즈가 안정적으로 넘어갑니다.
+
+### ✋ 수동 결과 확인(Confirm) 시스템 도입
+* 투표 결과나 원정 결과가 순식간에 지나가 버리는 문제를 해결하기 위해, 모든 플레이어가 결과를 인지하고 '결과 확인 완료' 버튼을 눌러야만 다음 단계로 넘어가도록 개선했습니다.
+
+### ⌨️ UI/UX 및 접근성 개선
+* 로비 화면 디자인을 더 직관적으로 간소화했습니다.
+* PC의 Enter 키 및 모바일 키보드의 이동/완료 버튼과 입력창이 완벽하게 연동되어 마우스 클릭 없이도 쾌적한 로그인이 가능합니다.
+
+### 🔐 Firebase 보안 규칙(Rules) 업데이트 (★매우 중요)
+* 새로운 기능인 게임 이력(past_games) 데이터베이스가 추가되었으므로, README의 Firebase 규칙 안내 부분 코드를 반드시 최신화해야 합니다.
+```JSON
+{
+  "rules": {
+    "rooms": {
+      ".indexOn": ["createdAt"],
+      ".read": "true",
+      "$roomId": {
+        ".write": "(!data.exists() && newData.child('adminKey').val() === '원하는비밀번호') || (data.exists() && newData.val() != null) || (data.exists() && newData.val() == null && data.child('createdAt').val() < (now - 86400000))"
+      }
+    },
+    "past_games": {
+      ".read": "true",
+      "$gameId": {
+        ".write": "!data.exists() || !newData.exists()"
+      }
+    }
+  }
+}
+```
+(설명: past_games 블록을 추가하여, 새로운 기록 생성 및 휴지통 삭제는 허용하되 기존 기록의 덮어쓰기/변조는 막는 Append-only 규칙을 명시했습니다.)
+
+---
+## 🎲 업데이트 내역 (v1.1)
 
 ### 🔐 보안: 관리자 전용 방 생성 시스템
 
@@ -22,22 +65,8 @@
 1. [Firebase Console](https://console.firebase.google.com/)에 접속하여 해당 프로젝트로 이동합니다.
 2. 좌측 메뉴에서 **[Build] -> [Realtime Database]**를 선택합니다.
 3. 상단의 **[규칙 (Rules)]** 탭을 클릭합니다.
-4. 기존 코드를 모두 지우고, 아래의 JSON 코드를 복사하여 붙여넣습니다.
+4. 기존 코드를 모두 지우고, 아래의 JSON 코드를 복사하여 붙여넣습니다. (v1.2 변경사항 참조)
 5. 코드 내의 `'원하는비밀번호'` 부분을 본인이 사용할 실제 관리자 비밀번호(영문/숫자)로 변경한 후 **[게시 (Publish)]**를 클릭합니다.
-
-```json
-{
-  "rules": {
-    "rooms": {
-      ".indexOn": ["createdAt"],
-      ".read": "true",
-      "$roomId": {
-        ".write": "(!data.exists() && newData.child('adminKey').val() === '원하는비밀번호') || (data.exists() && newData.val() != null) || (data.exists() && newData.val() == null && data.child('createdAt').val() < (now - 86400000))"
-      }
-    }
-  }
-}
-```
 
 ---
 
