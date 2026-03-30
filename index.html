@@ -483,19 +483,20 @@
                     roleListEl.innerHTML += `<li style="padding: 5px 0; border-bottom: 1px solid #555;"><span style="color:${nameColor}; font-weight:bold;">${player.nickname}</span> : ${displayRole}</li>`;
                 });
                 
-                if (isHost && !playData.isHistorySaved && !window.isProcessingPhaseTransition) {
-                    window.isProcessingPhaseTransition = true;
+                // [핵심 수정] 락(Lock) 검사를 제거하여 버튼이 무조건 노출되도록 변경
+                if (isHost) {
                     document.getElementById('btnRestartGame').classList.remove('hidden');
                     
-                    const finalLog = (playData.mdLog || '') + `\n\n### 🏆 최종 결과\n* **${reasonText}**`;
-                    const updates = {};
-                    updates[`rooms/${currentRoomId}/playData/isHistorySaved`] = true;
-                    updates[`rooms/${currentRoomId}/playData/mdLog`] = finalLog;
-                    
-                    update(ref(db), updates).then(() => {
-                        push(ref(db, 'past_games'), { timestamp: Date.now(), roomId: currentRoomId, markdown: finalLog });
-                        setTimeout(() => { window.isProcessingPhaseTransition = false; }, 2000);
-                    });
+                    if (!playData.isHistorySaved) {
+                        const finalLog = (playData.mdLog || '') + `\n\n### 🏆 최종 결과\n* **${reasonText}**`;
+                        const updates = {};
+                        updates[`rooms/${currentRoomId}/playData/isHistorySaved`] = true;
+                        updates[`rooms/${currentRoomId}/playData/mdLog`] = finalLog;
+                        
+                        update(ref(db), updates).then(() => {
+                            push(ref(db, 'past_games'), { timestamp: Date.now(), roomId: currentRoomId, markdown: finalLog });
+                        });
+                    }
                 }
                 return;
             }
