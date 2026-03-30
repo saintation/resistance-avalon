@@ -78,18 +78,20 @@
 </head>
 <body>
     <h1>아발론: 온라인</h1>
-
-    <div id="lobbyScreen" class="container">
-        <h3>대기실</h3>
+    
+        <div id="lobbyScreen" class="container">
+        <p style="margin-top: 0; margin-bottom: 15px; color: #aaa; font-size: 14px;">이름과 방 코드를 입력하세요</p>
         <input type="text" id="nicknameInput" placeholder="닉네임 입력" maxlength="8"/>
-        <input type="text" id="roomCodeInput" placeholder="방 코드 4자리 (입장시)" maxlength="4" />
+        <input type="text" id="roomCodeInput" placeholder="방 코드 4자리" maxlength="4" />
         
         <button id="joinRoomBtn" class="btn-accent" style="margin-bottom: 5px;">방 입장하기</button>
         
         <div style="border-top: 1px solid #333; margin: 15px 0;"></div>
         
-        <button id="createRoomBtn" style="background: transparent; color: #888; border: 1px solid #444; font-size: 13px; padding: 10px; transition: all 0.2s;">방 만들기</button>
-        <button id="openHistoryBtn" style="background: transparent; color: var(--accent); border: 1px solid var(--accent); font-size: 13px; padding: 10px; transition: all 0.2s; margin-top: 10px;">게임 이력 조회 (관리자)</button>
+        <div style="display: flex; gap: 10px;">
+            <button id="createRoomBtn" style="flex: 1; background: transparent; color: #888; border: 1px solid #444; font-size: 13px; padding: 10px; transition: all 0.2s;">방 만들기</button>
+            <button id="openHistoryBtn" style="flex: 1; background: transparent; color: #888; border: 1px solid #444; font-size: 13px; padding: 10px; transition: all 0.2s;">게임 이력 조회</button>
+        </div>
     </div>
 
     <div id="passwordModal" class="modal-overlay hidden">
