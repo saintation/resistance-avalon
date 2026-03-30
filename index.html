@@ -69,6 +69,8 @@
         .history-item { padding: 12px; border-bottom: 1px solid #333; cursor: pointer; transition: background 0.2s; border-radius: 6px; font-size: 14px; color: #ccc; }
         .history-item:hover { background: rgba(255,255,255,0.05); color: var(--accent); }
         .history-item.active { background: rgba(187,134,252,0.1); color: var(--accent); border-color: var(--accent); }
+        .delete-btn { font-size: 14px; cursor: pointer; color: #666; transition: color 0.2s; margin-left: 10px; }
+        .delete-btn:hover { color: var(--danger); }
         .md-content { overflow-y: auto; flex: 1; font-size: 14px; line-height: 1.6; padding-right: 10px; color: #e0e0e0; }
         .md-content h2, .md-content h3, .md-content h4 { color: var(--accent); }
         .md-content strong { color: var(--success); }
@@ -397,7 +399,6 @@
             if (hasInfo) secretArea.classList.remove('hidden');
         }
 
-        // [핵심] Update 방식의 안정적인 상태 전이 락 시스템으로 롤백
         function renderConfirmationUI(containerId, playData, totalPlayers, actionCallback) {
             const container = document.getElementById(containerId);
             const confirmations = playData.confirmations || {};
@@ -477,16 +478,14 @@
                 Object.values(globalPlayersData).forEach(player => {
                     const isEvil = ["Assassin", "Morgana", "Mordred", "Oberon", "Minion of Mordred"].includes(player.role);
                     const nameColor = isEvil ? 'var(--danger)' : 'var(--success)';
-                    let displayRole = "신하";
+                    let displayRole = "아서왕의 충직한 신하";
                     if(player.role === "Merlin") displayRole = "멀린"; else if(player.role === "Percival") displayRole = "퍼시벌"; else if(player.role === "Assassin") displayRole = "암살자";
-                    else if(player.role === "Morgana") displayRole = "모르가나"; else if(player.role === "Mordred") displayRole = "모드레드"; else if(player.role === "Oberon") displayRole = "오베론"; else if(player.role === "Minion of Mordred") displayRole = "수하";
+                    else if(player.role === "Morgana") displayRole = "모르가나"; else if(player.role === "Mordred") displayRole = "모드레드"; else if(player.role === "Oberon") displayRole = "오베론"; else if(player.role === "Minion of Mordred") displayRole = "모드레드의 수하";
                     roleListEl.innerHTML += `<li style="padding: 5px 0; border-bottom: 1px solid #555;"><span style="color:${nameColor}; font-weight:bold;">${player.nickname}</span> : ${displayRole}</li>`;
                 });
                 
-                // [핵심 수정] 락(Lock) 검사를 제거하여 버튼이 무조건 노출되도록 변경
                 if (isHost) {
                     document.getElementById('btnRestartGame').classList.remove('hidden');
-                    
                     if (!playData.isHistorySaved) {
                         const finalLog = (playData.mdLog || '') + `\n\n### 🏆 최종 결과\n* **${reasonText}**`;
                         const updates = {};
@@ -689,6 +688,7 @@
             });
         }
 
+        // [수정] 이력 삭제(휴지통) 기능이 포함된 리스트 로드 로직
         function loadHistoryList() {
             get(ref(db, 'past_games')).then((snapshot) => {
                 const listContainer = document.getElementById('historyListContainer');
@@ -704,7 +704,15 @@
                 games.forEach(game => {
                     const date = new Date(game.timestamp).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
                     const div = document.createElement('div'); div.className = 'history-item';
-                    div.innerHTML = `<b>방 ${game.roomId}</b> <span style="color:#888; font-size:12px; float:right;">${date}</span>`;
+                    
+                    div.innerHTML = `
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span><b>방 ${game.roomId}</b> <span style="color:#888; font-size:12px; margin-left:5px;">${date}</span></span>
+                            <span class="delete-btn" title="삭제">🗑️</span>
+                        </div>
+                    `;
+                    
+                    // 조회 기능 바인딩
                     div.onclick = () => {
                         document.querySelectorAll('.history-item').forEach(el => el.classList.remove('active'));
                         div.classList.add('active');
@@ -712,6 +720,24 @@
                         document.getElementById('historyHtmlContent').innerHTML = marked.parse(game.markdown);
                         document.getElementById('historyMdContent').value = game.markdown;
                     };
+
+                    // 삭제 기능 바인딩
+                    const delBtn = div.querySelector('.delete-btn');
+                    delBtn.onclick = (e) => {
+                        e.stopPropagation(); // 삭제 버튼 클릭 시 뷰어 열림 방지
+                        if (confirm(`정말로 방 ${game.roomId}의 기록을 삭제하시겠습니까?`)) {
+                            set(ref(db, `past_games/${game.id}`), null).then(() => {
+                                loadHistoryList(); // 삭제 후 리스트 갱신
+                                // 현재 열려있는 뷰어가 삭제된 항목이라면 뷰어 초기화
+                                if (div.classList.contains('active')) {
+                                    document.getElementById('historyDetailTitle').innerText = '기록을 선택하세요';
+                                    document.getElementById('historyHtmlContent').innerHTML = '좌측 목록에서 게임을 선택하면 상세 복기 데이터가 표시됩니다.';
+                                    document.getElementById('historyMdContent').value = '';
+                                }
+                            });
+                        }
+                    };
+
                     listContainer.appendChild(div);
                 });
             });
@@ -792,11 +818,15 @@
 
                 roles.sort(() => Math.random() - 0.5); let playerOrder = [...playerIds].sort(() => Math.random() - 0.5); 
                 
-                let initMdLog = `## 📝 아발론 게임 기록 (방 ${currentRoomId})\n\n### 🎭 참가자 직업 명단\n`;
+                // [수정] 마크다운 타이틀 타임스탬프 형식 적용
+                const now = new Date();
+                const dateString = now.toLocaleString('ko-KR', { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true });
+                
+                let initMdLog = `## 📝 아발론 게임 기록 (${dateString})\n\n### 🎭 참가자 직업 명단\n`;
                 playerIds.forEach((id, index) => {
-                    let displayRole = "신하"; const r = roles[index];
+                    let displayRole = "아서왕의 충직한 신하"; const r = roles[index];
                     if(r === "Merlin") displayRole = "멀린"; else if(r === "Percival") displayRole = "퍼시벌"; else if(r === "Assassin") displayRole = "암살자";
-                    else if(r === "Morgana") displayRole = "모르가나"; else if(r === "Mordred") displayRole = "모드레드"; else if(r === "Oberon") displayRole = "오베론"; else if(r === "Minion of Mordred") displayRole = "수하";
+                    else if(r === "Morgana") displayRole = "모르가나"; else if(r === "Mordred") displayRole = "모드레드"; else if(r === "Oberon") displayRole = "오베론"; else if(r === "Minion of Mordred") displayRole = "모드레드의 수하";
                     initMdLog += `* **${snapshot.child(id).val().nickname}** : ${displayRole}\n`;
                 });
 
