@@ -98,7 +98,8 @@
                 <p id="questResultSummary" style="font-size: 18px; font-weight: bold;"></p>
                 <div id="questConfirmArea" class="confirm-area"></div>
             </div>
-        </div>
+            
+            </div>
     </div>
 
     <div id="passwordModal" class="container hidden" style="position: absolute; top: 20%; z-index: 100;">
@@ -108,18 +109,16 @@
         <button id="cancelCreateBtn" class="btn-danger">취소</button>
     </div>
 
-<script type="module">
-        // firebase-config.js와 동일한 10.8.1 버전으로 맞춤
+    <script type="module">
         import { ref, set, get, update, onValue, onDisconnect } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
-        
-        // 원본 소스에서 db 객체를 바로 가져옵니다.
+        // 기존에 분리해둔 설정 파일에서 db 객체를 그대로 가져옵니다.
         import { db } from "./firebase-config.js";
 
         let myUserId = "";
         let currentRoomId = "";
         let isHost = false;
         let globalPlayersData = {};
-        window.isProcessingPhaseTransition = false;
+        window.isProcessingPhaseTransition = false; // 중복 콜백 방지용 락
 
         // DOM 요소 캐싱
         const passwordModal = document.getElementById('passwordModal');
@@ -153,7 +152,6 @@
             let isUnique = false;
             
             try {
-                // 방 코드가 겹치지 않을 때까지 반복 확인
                 while (!isUnique) {
                     roomId = Math.floor(1000 + Math.random() * 9000).toString();
                     const snapshot = await get(ref(db, `rooms/${roomId}`));
@@ -182,7 +180,6 @@
             
             get(ref(db, `rooms/${roomId}`)).then((snapshot) => {
                 if (snapshot.exists()) {
-                    // 이미 게임이 시작되었으나, 기존에 참여했던 유저라면(ID 존재) 재접속 허용
                     const cleanNickname = nickname.replace(/[.#$\[\]\s]/g, "");
                     const isExistingUser = snapshot.val().players && snapshot.val().players[cleanNickname];
                     
@@ -198,22 +195,18 @@
         });
 
         function joinRoomLogic(roomId, nickname) {
-            // Firebase key 제약을 우회하기 위해 닉네임에서 특수문자 제거 후 고유 ID로 사용
             const cleanNickname = nickname.replace(/[.#$\[\]\s]/g, "");
             myUserId = cleanNickname || ("user_" + Math.floor(Math.random() * 10000)); 
             currentRoomId = roomId;
 
             const playerRef = ref(db, `rooms/${roomId}/players/${myUserId}`);
             
-            // 연결 끊김 시 isOnline을 false로 자동 변경 (좀비 방지 보조)
             onDisconnect(playerRef).update({ isOnline: false });
 
-            // 플레이어 정보 덮어쓰기 (또는 기존 데이터 업데이트)
             update(playerRef, {
                 nickname: nickname,
                 isOnline: true
             }).then(() => {
-                // 기존에 역할이 없었다면 pending 처리 (새로 들어온 경우)
                 get(playerRef).then(snap => {
                     if(!snap.val().role) {
                         update(playerRef, { isReady: false, role: "pending" });
@@ -257,11 +250,10 @@
                 };
             }
 
-            // 모든 인원이 확인했고, 내가 방장일 때만 콜백 실행
             if (isHost && confirmedCount === totalPlayers && !window.isProcessingPhaseTransition) {
-                window.isProcessingPhaseTransition = true; // 중복 방지 락 체결
+                window.isProcessingPhaseTransition = true; 
                 hostActionCallback();
-                setTimeout(() => { window.isProcessingPhaseTransition = false; }, 2000); // 2초 후 락 해제
+                setTimeout(() => { window.isProcessingPhaseTransition = false; }, 2000); 
             }
         }
 
@@ -281,7 +273,6 @@
                 const playData = data.playData || {};
                 const totalPlayers = Object.keys(globalPlayersData).length;
 
-                // 호스트 판별 (편의상 첫 번째 접속자로 지정)
                 const playerIds = Object.keys(globalPlayersData);
                 isHost = (playerIds[0] === myUserId);
                 
@@ -301,11 +292,9 @@
                     document.getElementById('roleSummaryHeader').classList.add('hidden');
                     statusText.innerText = "플레이어 대기 중...";
                     
-                    // 핵심 수정: 이전 판의 직업 UI와 잔재를 DOM에서 강제 삭제
                     document.getElementById('roleSummaryContent').innerHTML = '';
                     document.querySelectorAll('.secret-box').forEach(box => box.remove());
                     
-                    // 플레이어 목록 렌더링
                     const playerList = document.getElementById('playerList');
                     playerList.innerHTML = '';
                     let readyCount = 0;
@@ -344,16 +333,14 @@
                     document.getElementById('lobbyArea').classList.add('hidden');
                     document.getElementById('gamePlayArea').classList.remove('hidden');
                     
-                    // 역할 부여 처리 (한 번만 렌더링되도록 처리)
                     const myRole = globalPlayersData[myUserId]?.role;
                     const roleContentEl = document.getElementById('roleSummaryContent');
                     if (myRole && myRole !== "pending" && roleContentEl.innerHTML === '') {
                         document.getElementById('roleSummaryHeader').classList.remove('hidden');
                         roleContentEl.innerHTML = `<h4>당신의 역할은 <span style="color:var(--accent)">${myRole}</span> 입니다.</h4>`;
-                        // (이후 특정 역할에 맞는 시야(secret-box)를 렌더링하는 기존 로직이 이곳에 추가됨)
+                        // (필요 시 역할에 따른 시야 코드를 여기에 추가하세요)
                     }
 
-                    // 모든 영역 숨김 처리 후 상태에 맞게 노출
                     document.getElementById('voteResultArea').classList.add('hidden');
                     document.getElementById('questVotingArea').classList.add('hidden');
                     document.getElementById('questResultArea').classList.add('hidden');
@@ -397,7 +384,7 @@
                                 }
                             }
                             updates[`rooms/${currentRoomId}/playData/teamVotes`] = null;
-                            updates[`rooms/${currentRoomId}/playData/confirmations`] = null; // 확인 데이터 초기화
+                            updates[`rooms/${currentRoomId}/playData/confirmations`] = null; 
                             update(ref(db), updates);
                         });
 
@@ -405,7 +392,6 @@
                         const isParticipant = (playData.selectedTeam || []).includes(myUserId);
                         if (isParticipant) {
                             document.getElementById('questVotingArea').classList.remove('hidden');
-                            // (기존 찬반 투표 버튼 활성화/비활성화 로직 유지)
                         } else {
                             statusText.innerText = "선택된 원정대원들이 임무를 수행 중입니다.";
                         }
@@ -413,7 +399,6 @@
                         const qVotes = playData.questVotes || {};
                         const requiredSize = playData.selectedTeam ? playData.selectedTeam.length : 0;
                         
-                        // 호스트: 임무 투표 완료 시 타임아웃 없이 결과 상태로 전환
                         if (isHost && Object.keys(qVotes).length === requiredSize && !window.isProcessingPhaseTransition) {
                             window.isProcessingPhaseTransition = true;
                             
@@ -465,16 +450,72 @@
                                 updates[`rooms/${currentRoomId}/playData/questVotes`] = null;
                                 updates[`rooms/${currentRoomId}/playData/selectedTeam`] = null;
                             }
-                            updates[`rooms/${currentRoomId}/playData/confirmations`] = null; // 확인 데이터 초기화
+                            updates[`rooms/${currentRoomId}/playData/confirmations`] = null; 
                             update(ref(db), updates);
                         });
                     }
-                    // 추가적으로 team_building, assassin_phase, game_over 상태에 대한 처리를 이곳에 작성합니다.
                 }
             });
         }
 
-        // 게임 준비 로직 등 기타 버튼 이벤트
+        // [복구 완료] 게임 시작 로직
+        document.getElementById('startGameBtn').addEventListener('click', () => {
+            if (!isHost) return;
+            get(ref(db, `rooms/${currentRoomId}/players`)).then((snapshot) => {
+                const playerIds = [];
+                snapshot.forEach((child) => { playerIds.push(child.key); });
+                const count = playerIds.length;
+                
+                if (count < 5 || count > 10) return alert("5~10명이어야 합니다.");
+                
+                let evilSlots = { 5: 2, 6: 2, 7: 3, 8: 3, 9: 3, 10: 4 }[count];
+                let goodSlots = count - evilSlots;
+                let roles = ["Merlin", "Assassin"];
+                goodSlots--; evilSlots--; 
+
+                if (document.getElementById('cbMorgana').checked) { roles.push("Morgana"); evilSlots--; }
+                if (document.getElementById('cbMordred').checked) { roles.push("Mordred"); evilSlots--; }
+                if (document.getElementById('cbOberon').checked) { roles.push("Oberon"); evilSlots--; }
+                if (evilSlots < 0) return alert("선택한 '모드레드의 수하' 수가 너무 많습니다.");
+
+                if (document.getElementById('cbPercival').checked) { roles.push("Percival"); goodSlots--; }
+                if (goodSlots < 0) return alert("선택한 '아서왕의 수하' 수가 너무 많습니다.");
+
+                for (let i = 0; i < goodSlots; i++) roles.push("Servant of Arthur");
+                for (let i = 0; i < evilSlots; i++) roles.push("Minion of Mordred");
+
+                roles.sort(() => Math.random() - 0.5);
+                let playerOrder = [...playerIds].sort(() => Math.random() - 0.5);
+
+                const updates = {};
+                playerIds.forEach((id, index) => updates[`rooms/${currentRoomId}/players/${id}/role`] = roles[index]);
+                updates[`rooms/${currentRoomId}/gameState`] = "team_building";
+                updates[`rooms/${currentRoomId}/playData`] = { 
+                    playerOrder: playerOrder, 
+                    leaderIndex: 0, 
+                    currentQuest: 0, 
+                    voteTrack: 0, 
+                    selectedTeam: [] 
+                };
+                update(ref(db), updates);
+            });
+        });
+
+        // [복구 완료] 게임 강제 초기화 로직
+        document.getElementById('btnRestartGame').addEventListener('click', () => {
+            if (!isHost) return;
+            if (confirm("게임을 초기화하고 로비로 돌아가시겠습니까?")) {
+                const updates = {};
+                updates[`rooms/${currentRoomId}/gameState`] = "lobby";
+                updates[`rooms/${currentRoomId}/playData`] = null;
+                Object.keys(globalPlayersData).forEach(id => {
+                    updates[`rooms/${currentRoomId}/players/${id}/isReady`] = false;
+                    updates[`rooms/${currentRoomId}/players/${id}/role`] = "pending";
+                });
+                update(ref(db), updates);
+            }
+        });
+
         document.getElementById('readyBtn').addEventListener('click', () => {
             get(ref(db, `rooms/${currentRoomId}/players/${myUserId}`)).then((snapshot) => {
                 update(ref(db, `rooms/${currentRoomId}/players/${myUserId}`), { isReady: !snapshot.val().isReady });
@@ -490,7 +531,6 @@
             }
         });
         
-        // 이전 세션이 로컬 스토리지에 남아있다면 자동 복구 시도
         window.onload = () => {
             const savedSession = localStorage.getItem('avalon_session');
             if (savedSession) {
