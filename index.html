@@ -108,25 +108,18 @@
         <button id="cancelCreateBtn" class="btn-danger">취소</button>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, get, update, onValue, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
-        /* Firebase 설정 (기존 프로젝트 설정값으로 교체 필요) */
-        const firebaseConfig = {
-            // apiKey: "YOUR_API_KEY",
-            // authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            // databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
-            // projectId: "YOUR_PROJECT_ID"
-        };
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
+<script type="module">
+        // firebase-config.js와 동일한 10.8.1 버전으로 맞춤
+        import { ref, set, get, update, onValue, onDisconnect } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+        
+        // 원본 소스에서 db 객체를 바로 가져옵니다.
+        import { db } from "./firebase-config.js";
 
         let myUserId = "";
         let currentRoomId = "";
         let isHost = false;
         let globalPlayersData = {};
-        window.isProcessingPhaseTransition = false; // 중복 콜백 방지용 락
+        window.isProcessingPhaseTransition = false;
 
         // DOM 요소 캐싱
         const passwordModal = document.getElementById('passwordModal');
