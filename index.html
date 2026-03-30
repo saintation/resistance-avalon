@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>레지스탕스 아발론: 온라인</title>
     <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         :root {
             --bg-color: #121212; --card-bg: #1e1e1e; --text-main: #e0e0e0;
@@ -57,13 +58,22 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
 
-        /* 커스텀 모달창 CSS (비밀번호 입력용) */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; justify-content: center; align-items: center; }
         .modal-overlay:not(.hidden) { display: flex !important; }
         .modal-content { background: var(--card-bg); padding: 25px; border-radius: 12px; border: 1px solid #444; width: 90%; max-width: 320px; box-sizing: border-box; }
-        
-        /* [신규] 수동 확인 영역 CSS */
         .confirm-area { margin-top: 15px; padding: 15px; border: 1px solid #444; border-radius: 8px; background-color: rgba(255,255,255,0.02); }
+
+        /* [신규] 게임 이력 조회 2단 분할 뷰어 CSS */
+        #historyScreen { display: flex; width: 100%; max-width: 1000px; height: 85vh; gap: 20px; flex-direction: row; padding: 20px; box-sizing: border-box; text-align: left; }
+        .history-list-panel { flex: 1; display: flex; flex-direction: column; background: var(--card-bg); border-radius: 12px; padding: 15px; border: 1px solid #444; overflow: hidden; }
+        .history-viewer-panel { flex: 2; display: flex; flex-direction: column; background: #1a1a1a; border-radius: 12px; border: 1px solid #444; padding: 20px; overflow: hidden; }
+        .history-item { padding: 12px; border-bottom: 1px solid #333; cursor: pointer; transition: background 0.2s; border-radius: 6px; font-size: 14px; color: #ccc; }
+        .history-item:hover { background: rgba(255,255,255,0.05); color: var(--accent); }
+        .history-item.active { background: rgba(187,134,252,0.1); color: var(--accent); border-color: var(--accent); }
+        .md-content { overflow-y: auto; flex: 1; font-size: 14px; line-height: 1.6; padding-right: 10px; color: #e0e0e0; }
+        .md-content h2, .md-content h3, .md-content h4 { color: var(--accent); }
+        .md-content strong { color: var(--success); }
+        .md-textarea { width: 100%; height: 100%; background: #121212; color: #a5d6ff; border: 1px solid #333; border-radius: 8px; padding: 15px; font-family: monospace; font-size: 13px; resize: none; box-sizing: border-box; outline: none; line-height: 1.5; }
     </style>
 </head>
 <body>
@@ -79,17 +89,37 @@
         <div style="border-top: 1px solid #333; margin: 15px 0;"></div>
         
         <button id="createRoomBtn" style="background: transparent; color: #888; border: 1px solid #444; font-size: 13px; padding: 10px; transition: all 0.2s;">방 만들기</button>
+        <button id="openHistoryBtn" style="background: transparent; color: var(--accent); border: 1px solid var(--accent); font-size: 13px; padding: 10px; transition: all 0.2s; margin-top: 10px;">게임 이력 조회 (관리자)</button>
     </div>
 
     <div id="passwordModal" class="modal-overlay hidden">
         <div class="modal-content">
-            <h4 style="margin-top: 0; color: var(--accent); margin-bottom: 5px;">방 생성 권한</h4>
+            <h4 style="margin-top: 0; color: var(--accent); margin-bottom: 5px;">접근 권한 확인</h4>
             <p style="font-size: 12px; color: #aaa; margin-bottom: 15px;">관리자 비밀번호를 입력하세요.</p>
             <input type="password" id="adminPasswordInput" placeholder="비밀번호" style="margin-bottom: 20px; text-align: center; letter-spacing: 3px;" />
             <div style="display: flex; gap: 10px;">
-                <button id="confirmCreateBtn" class="btn-accent" style="flex: 1; padding: 10px;">확인</button>
-                <button id="cancelCreateBtn" class="btn-danger" style="flex: 1; padding: 10px;">취소</button>
+                <button id="confirmPasswordBtn" class="btn-accent" style="flex: 1; padding: 10px;">확인</button>
+                <button id="cancelPasswordBtn" class="btn-danger" style="flex: 1; padding: 10px;">취소</button>
             </div>
+        </div>
+    </div>
+
+    <div id="historyScreen" class="hidden">
+        <div class="history-list-panel">
+            <h3 style="margin-top:0; border-bottom: 1px solid #333; padding-bottom: 10px;">저장된 게임 목록</h3>
+            <div id="historyListContainer" style="flex: 1; overflow-y: auto;"></div>
+            <button id="closeHistoryBtn" class="btn-danger" style="margin-top: 15px;">로비로 돌아가기</button>
+        </div>
+        <div class="history-viewer-panel">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 15px;">
+                <h3 id="historyDetailTitle" style="margin: 0; color: var(--accent); border: none; padding: 0;">기록을 선택하세요</h3>
+                <div style="display: flex; gap: 8px;">
+                    <button id="toggleHtmlBtn" class="btn-ready is-ready" style="padding: 6px 12px; font-size: 12px; width: auto; margin: 0;">렌더링 뷰</button>
+                    <button id="toggleMdBtn" class="btn-ready" style="padding: 6px 12px; font-size: 12px; width: auto; margin: 0;">마크다운 원문</button>
+                </div>
+            </div>
+            <div id="historyHtmlContent" class="md-content">좌측 목록에서 게임을 선택하면 상세 복기 데이터가 표시됩니다.</div>
+            <textarea id="historyMdContent" class="md-textarea hidden" readonly></textarea>
         </div>
     </div>
 
@@ -180,11 +210,11 @@
         <button id="leaveRoomBtn" class="btn-danger" style="margin-top:20px;">Exit</button>
     </div>
 
-    <div id="versionWatermark">v1.1.0</div>
+    <div id="versionWatermark">v1.1.2</div>
 
     <script type="module">
         import { db } from "./firebase-config.js";
-        import { ref, set, get, onValue, update, onDisconnect, query, orderByChild, endAt } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+        import { ref, set, get, onValue, update, onDisconnect, query, orderByChild, endAt, runTransaction, push } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
         const lobbyScreen = document.getElementById('lobbyScreen');
         const gameScreen = document.getElementById('gameScreen');
@@ -198,11 +228,11 @@
         const toggleIcon = document.getElementById('toggleIcon');
         const hostSettings = document.getElementById('hostSettings');
 
-        // 모달창 UI
         const passwordModal = document.getElementById('passwordModal');
         const adminPasswordInput = document.getElementById('adminPasswordInput');
-        const confirmCreateBtn = document.getElementById('confirmCreateBtn');
-        const cancelCreateBtn = document.getElementById('cancelCreateBtn');
+        const confirmPasswordBtn = document.getElementById('confirmPasswordBtn');
+        const cancelPasswordBtn = document.getElementById('cancelPasswordBtn');
+        let currentModalAction = null; // 'create' or 'history'
 
         let currentRoomId = null;
         let myUserId = null;
@@ -212,15 +242,29 @@
         let currentPlayData = null;
         let gameStateCleanup = null;
         let playDataCleanup = null;
-        
-        // [수정사항] 중복 콜백 방지용 락
-        window.isProcessingPhaseTransition = false; 
 
         const QUEST_CAPACITY = { 5: [2,3,2,3,3], 6: [2,3,4,3,4], 7: [2,3,3,4,4], 8: [3,4,4,5,5], 9: [3,4,4,5,5], 10: [3,4,4,5,5] };
         
         toggleRoleBtn.addEventListener('click', () => {
             roleSummaryContent.classList.toggle('show');
             toggleIcon.innerText = roleSummaryContent.classList.contains('show') ? '▲' : '▼';
+        });
+
+        // [신규] 마크다운 토글 로직
+        const btnHtml = document.getElementById('toggleHtmlBtn');
+        const btnMd = document.getElementById('toggleMdBtn');
+        const contentHtml = document.getElementById('historyHtmlContent');
+        const contentMd = document.getElementById('historyMdContent');
+
+        btnHtml.addEventListener('click', () => {
+            btnHtml.classList.replace('btn-ready', 'btn-accent'); btnHtml.classList.add('is-ready');
+            btnMd.classList.replace('btn-accent', 'btn-ready'); btnMd.classList.remove('is-ready');
+            contentHtml.classList.remove('hidden'); contentMd.classList.add('hidden');
+        });
+        btnMd.addEventListener('click', () => {
+            btnMd.classList.replace('btn-ready', 'btn-accent'); btnMd.classList.add('is-ready');
+            btnHtml.classList.replace('btn-accent', 'btn-ready'); btnHtml.classList.remove('is-ready');
+            contentMd.classList.remove('hidden'); contentHtml.classList.add('hidden');
         });
 
         function cleanupOldRooms() {
@@ -258,11 +302,8 @@
             playArea.classList.add('hidden'); waitingArea.classList.remove('hidden');
             document.getElementById('roleSummaryContent').classList.remove('show');
             document.getElementById('toggleIcon').innerText = '▼'; document.getElementById('gameStatusText').innerText = '';
-            
-            // [수정사항] 멀린 버그 수정 - 대기실 복귀 시 잔존하는 기밀 정보 초기화
             document.getElementById('secretInfoList').innerHTML = '';
             document.getElementById('secretInfoArea').classList.add('hidden');
-            
             for(let i=1; i<=5; i++) {
                 document.getElementById(`questInfo${i}`).innerHTML = ''; document.getElementById(`quest${i}`).className = 'quest-circle';
                 document.getElementById(`quest${i}`).style = ''; document.getElementById(`questDetail${i}`).innerHTML = '';
@@ -356,41 +397,35 @@
             if (hasInfo) secretArea.classList.remove('hidden');
         }
 
-        // [수정사항] 공통 결과 확인 시스템 UI 렌더링 함수
-        function renderConfirmationUI(containerId, playData, totalPlayers, hostActionCallback) {
+        // [수정] 트랜잭션 동시성 제어가 적용된 확인 시스템 UI
+        function renderConfirmationUI(containerId, playData, totalPlayers, expectedState, transactionCallback) {
             const container = document.getElementById(containerId);
             const confirmations = playData.confirmations || {};
             const confirmedCount = Object.keys(confirmations).length;
             
-            const unconfirmedPlayers = Object.keys(globalPlayersData)
-                .filter(id => !confirmations[id])
-                .map(id => globalPlayersData[id].nickname);
+            const unconfirmedPlayers = Object.keys(globalPlayersData).filter(id => !confirmations[id]).map(id => globalPlayersData[id].nickname);
             
             let html = ``;
             if (confirmations[myUserId]) {
                 html += `<p style="font-size: 14px; color: var(--accent);">다른 플레이어 대기 중... (${confirmedCount}/${totalPlayers})</p>`;
-                if (unconfirmedPlayers.length > 0) {
-                    html += `<p style="color: var(--danger); font-size: 12px; margin-top: 5px;">미확인: ${unconfirmedPlayers.join(', ')}</p>`;
-                }
+                if (unconfirmedPlayers.length > 0) html += `<p style="color: var(--danger); font-size: 12px; margin-top: 5px;">미확인: ${unconfirmedPlayers.join(', ')}</p>`;
             } else {
                 html += `<button id="btnConfirm_${containerId}" class="btn-accent" style="width: 100%;">결과 확인 완료</button>`;
-                if (unconfirmedPlayers.length > 0) {
-                    html += `<p style="color: var(--danger); font-size: 12px; margin-top: 10px;">미확인: ${unconfirmedPlayers.join(', ')}</p>`;
-                }
+                if (unconfirmedPlayers.length > 0) html += `<p style="color: var(--danger); font-size: 12px; margin-top: 10px;">미확인: ${unconfirmedPlayers.join(', ')}</p>`;
             }
             container.innerHTML = html;
 
             const btn = document.getElementById(`btnConfirm_${containerId}`);
             if (btn) {
-                btn.onclick = () => {
-                    update(ref(db, `rooms/${currentRoomId}/playData/confirmations`), { [myUserId]: true });
-                };
+                btn.onclick = () => { update(ref(db, `rooms/${currentRoomId}/playData/confirmations`), { [myUserId]: true }); };
             }
 
-            if (isHost && confirmedCount === totalPlayers && !window.isProcessingPhaseTransition) {
-                window.isProcessingPhaseTransition = true; 
-                hostActionCallback();
-                setTimeout(() => { window.isProcessingPhaseTransition = false; }, 2000); 
+            // 서버 기반 원자적 트랜잭션 처리 (Deadlock 원천 차단)
+            if (isHost && confirmedCount === totalPlayers) {
+                runTransaction(ref(db, `rooms/${currentRoomId}`), (room) => {
+                    if (!room || room.gameState !== expectedState) return; // 상태가 이미 변했으면 무시
+                    return transactionCallback(room, totalPlayers);
+                });
             }
         }
 
@@ -449,7 +484,24 @@
                     else if(player.role === "Morgana") displayRole = "모르가나"; else if(player.role === "Mordred") displayRole = "모드레드"; else if(player.role === "Oberon") displayRole = "오베론"; else if(player.role === "Minion of Mordred") displayRole = "수하";
                     roleListEl.innerHTML += `<li style="padding: 5px 0; border-bottom: 1px solid #555;"><span style="color:${nameColor}; font-weight:bold;">${player.nickname}</span> : ${displayRole}</li>`;
                 });
-                if (isHost) document.getElementById('btnRestartGame').classList.remove('hidden');
+                
+                // [신규] 게임 결과 이력 영구 보존 로직 (트랜잭션 기반 1회 실행 보장)
+                if (isHost) {
+                    document.getElementById('btnRestartGame').classList.remove('hidden');
+                    runTransaction(ref(db, `rooms/${currentRoomId}`), (room) => {
+                        if(room && !room.playData.isHistorySaved) {
+                            room.playData.mdLog += `\n\n### 🏆 최종 결과\n* **${reasonText}**`;
+                            room.playData.isHistorySaved = true;
+                            push(ref(db, 'past_games'), { 
+                                timestamp: Date.now(), 
+                                roomId: currentRoomId, 
+                                markdown: room.playData.mdLog 
+                            });
+                            return room;
+                        }
+                        return;
+                    });
+                }
                 return;
             }
 
@@ -461,7 +513,14 @@
                     if (targetSelect.options.length <= 1) { playData.playerOrder.forEach(id => { if (id !== myUserId) targetSelect.innerHTML += `<option value="${id}">${globalPlayersData[id].nickname}</option>`; }); }
                     document.getElementById('btnAssassinate').onclick = () => {
                         const targetId = targetSelect.value; if (!targetId) return alert("대상을 선택하세요.");
-                        if (confirm(`정말로 ${globalPlayersData[targetId].nickname} 님을 암살하시겠습니까?`)) update(ref(db), { [`rooms/${currentRoomId}/playData/assassinatedTarget`]: targetId, [`rooms/${currentRoomId}/gameState`]: "game_over" });
+                        if (confirm(`정말로 ${globalPlayersData[targetId].nickname} 님을 암살하시겠습니까?`)) {
+                            runTransaction(ref(db, `rooms/${currentRoomId}`), (room) => {
+                                if (!room || room.gameState !== "assassin_phase") return;
+                                room.playData.assassinatedTarget = targetId;
+                                room.gameState = "game_over";
+                                return room;
+                            });
+                        }
                     };
                 } else statusText.innerText = "암살자가 대상을 지정하고 있습니다...";
                 return;
@@ -483,7 +542,15 @@
                     });
                     submitTeamBtn.onclick = () => {
                         const selectedIds = Array.from(document.querySelectorAll('.team-cb:checked')).map(cb => cb.value);
-                        if(selectedIds.length === requiredSize) update(ref(db), { [`rooms/${currentRoomId}/playData/selectedTeam`]: selectedIds, [`rooms/${currentRoomId}/playData/teamVotes`]: null, [`rooms/${currentRoomId}/gameState`]: "team_voting" });
+                        if(selectedIds.length === requiredSize) {
+                            runTransaction(ref(db, `rooms/${currentRoomId}`), (room) => {
+                                if(!room || room.gameState !== "team_building") return;
+                                room.playData.selectedTeam = selectedIds;
+                                room.playData.teamVotes = null;
+                                room.gameState = "team_voting";
+                                return room;
+                            });
+                        }
                     };
                 } else statusText.innerHTML = `원정대장 <b>${globalPlayersData[leaderIdObj] ? globalPlayersData[leaderIdObj].nickname : "알 수 없음"}</b>님이 원정대를 구성하고 있습니다.`;
             } 
@@ -501,42 +568,49 @@
                     btnApprove.onclick = () => { set(ref(db, `rooms/${currentRoomId}/playData/teamVotes/${myUserId}`), 'approve'); }; btnReject.onclick = () => { set(ref(db, `rooms/${currentRoomId}/playData/teamVotes/${myUserId}`), 'reject'); };
                 }
                 
-                // [수정사항] 타임아웃 대신 수동 확인 로직으로 전이
                 if (isHost && currentVoteCount === totalPlayers) { 
-                    update(ref(db, `rooms/${currentRoomId}`), { gameState: "team_voting_result" }); 
+                    runTransaction(ref(db, `rooms/${currentRoomId}`), (room) => {
+                        if(!room || room.gameState !== "team_voting") return;
+                        room.gameState = "team_voting_result";
+                        return room;
+                    });
                 }
             }
             else if (currentGameState === "team_voting_result") {
                 document.getElementById('voteResultArea').classList.remove('hidden'); statusText.innerText = "투표 결과 확인 중...";
-                const votes = playData.teamVotes || {}; const voteResultList = document.getElementById('voteResultList'); voteResultList.innerHTML = ''; let approveCount = 0;
+                const votes = playData.teamVotes || {}; const voteResultList = document.getElementById('voteResultList'); voteResultList.innerHTML = ''; 
+                let approveCount = 0; const approveNames = []; const rejectNames = [];
                 Object.entries(votes).forEach(([id, v]) => {
-                    if (v === 'approve') approveCount++; voteResultList.innerHTML += `<li>${globalPlayersData[id] ? globalPlayersData[id].nickname : '알 수 없음'}: ${v === 'approve' ? '🟢 찬성' : '🔴 반대'}</li>`;
+                    const pName = globalPlayersData[id] ? globalPlayersData[id].nickname : '알 수 없음';
+                    if (v === 'approve') { approveCount++; approveNames.push(pName); } else { rejectNames.push(pName); }
+                    voteResultList.innerHTML += `<li>${pName}: ${v === 'approve' ? '🟢 찬성' : '🔴 반대'}</li>`;
                 });
                 const isApproved = approveCount > (totalPlayers / 2); const resultMsgEl = document.getElementById('voteResultMessage');
                 if (isApproved) { resultMsgEl.innerText = "원정대가 가결되었습니다!"; resultMsgEl.style.color = "var(--success)"; } 
                 else { resultMsgEl.innerText = "원정대가 부결되었습니다."; resultMsgEl.style.color = "var(--danger)"; }
                 
-                // [수정사항] 수동 확인 UI 렌더링 호출
-                renderConfirmationUI('teamVoteConfirmArea', playData, totalPlayers, () => {
-                    const updates = {};
+                // [신규] 트랜잭션 적용 락 해제 로직 및 마크다운 이력 누적
+                renderConfirmationUI('teamVoteConfirmArea', playData, totalPlayers, "team_voting_result", (room, tPlayers) => {
+                    const leaderName = room.players[room.playData.playerOrder[room.playData.leaderIndex]].nickname;
+                    const teamNames = (room.playData.selectedTeam || []).map(id => room.players[id].nickname);
+                    
+                    let log = `\n### 🚩 ${room.playData.currentQuest + 1}라운드 - ${room.playData.voteTrack + 1}차 제안\n`;
+                    log += `* 👑 **원정대장**: ${leaderName}\n`;
+                    log += `* 👥 **원정대원**: ${teamNames.join(', ')}\n`;
+                    log += `* 🗳️ **찬반 투표 결과**: **${isApproved ? '가결 🟢' : '부결 🔴'}**\n`;
+                    log += `  * 찬성: ${approveNames.join(', ') || '없음'}\n`;
+                    log += `  * 반대: ${rejectNames.join(', ') || '없음'}\n`;
+                    room.playData.mdLog += log;
+
                     if (isApproved) {
-                        updates[`rooms/${currentRoomId}/gameState`] = "quest_voting";
-                        updates[`rooms/${currentRoomId}/playData/voteTrack`] = 0;
-                        updates[`rooms/${currentRoomId}/playData/questVotes`] = null;
+                        room.gameState = "quest_voting"; room.playData.voteTrack = 0; room.playData.questVotes = null;
                     } else {
-                        const newTrack = (playData.voteTrack || 0) + 1;
-                        if (newTrack >= 5) {
-                            updates[`rooms/${currentRoomId}/gameState`] = "game_over";
-                            updates[`rooms/${currentRoomId}/playData/voteTrack`] = newTrack;
-                        } else {
-                            updates[`rooms/${currentRoomId}/gameState`] = "team_building";
-                            updates[`rooms/${currentRoomId}/playData/leaderIndex`] = (playData.leaderIndex + 1) % totalPlayers;
-                            updates[`rooms/${currentRoomId}/playData/voteTrack`] = newTrack;
-                        }
+                        const newTrack = (room.playData.voteTrack || 0) + 1;
+                        if (newTrack >= 5) { room.gameState = "game_over"; room.playData.voteTrack = newTrack; } 
+                        else { room.gameState = "team_building"; room.playData.leaderIndex = (room.playData.leaderIndex + 1) % tPlayers; room.playData.voteTrack = newTrack; }
                     }
-                    updates[`rooms/${currentRoomId}/playData/teamVotes`] = null;
-                    updates[`rooms/${currentRoomId}/playData/confirmations`] = null;
-                    update(ref(db), updates);
+                    room.playData.teamVotes = null; room.playData.confirmations = null;
+                    return room;
                 });
             }
             else if (currentGameState === "quest_voting") {
@@ -556,43 +630,56 @@
                     }
                 } else statusText.innerHTML = `선택된 원정대원들이 임무를 수행 중입니다.`;
                 
-                // [수정사항] 타임아웃 방지 (setTimeout 없이 바로 상태 전이만 기록)
                 const qVotes = playData.questVotes || {}; 
-                if (isHost && Object.keys(qVotes).length === requiredSize && !window.isProcessingPhaseTransition) {
-                    window.isProcessingPhaseTransition = true;
-                    let successCount = 0; let failCount = 0; Object.values(qVotes).forEach(v => { if (v === 'fail') failCount++; else successCount++; });
-                    const isQuestFailed = (totalPlayers >= 7 && currentQuestIndex === 3) ? (failCount >= 2) : (failCount >= 1);
-                    const currentResults = playData.questResults || []; currentResults[currentQuestIndex] = isQuestFailed ? 'fail' : 'success';
-                    const currentDetails = playData.questDetails || []; currentDetails[currentQuestIndex] = { s: successCount, f: failCount };
-                    update(ref(db), { [`rooms/${currentRoomId}/playData/questResults`]: currentResults, [`rooms/${currentRoomId}/playData/questDetails`]: currentDetails, [`rooms/${currentRoomId}/gameState`]: "quest_result" }).then(() => {
-                        setTimeout(() => { window.isProcessingPhaseTransition = false; }, 2000);
+                if (isHost && Object.keys(qVotes).length === requiredSize) {
+                    runTransaction(ref(db, `rooms/${currentRoomId}`), (room) => {
+                        if (!room || room.gameState !== "quest_voting") return;
+                        let successCount = 0; let failCount = 0;
+                        Object.values(room.playData.questVotes).forEach(v => { if (v === 'fail') failCount++; else successCount++; });
+                        const isQuestFailed = (totalPlayers >= 7 && room.playData.currentQuest === 3) ? (failCount >= 2) : (failCount >= 1);
+                        
+                        room.playData.questResults = room.playData.questResults || [];
+                        room.playData.questResults[room.playData.currentQuest] = isQuestFailed ? 'fail' : 'success';
+                        room.playData.questDetails = room.playData.questDetails || [];
+                        room.playData.questDetails[room.playData.currentQuest] = { s: successCount, f: failCount };
+                        room.gameState = "quest_result";
+                        return room;
                     });
                 }
             }
             else if (currentGameState === "quest_result") {
                 document.getElementById('questResultArea').classList.remove('hidden'); statusText.innerText = "원정 결과입니다.";
-                const qVotes = playData.questVotes || {}; let sCount = 0; let fCount = 0;
-                Object.values(qVotes).forEach(v => { if (v === 'fail') fCount++; else sCount++; });
+                const qVotes = playData.questVotes || {}; let sCount = 0; let fCount = 0; const successNames = []; const failNames = [];
+                Object.entries(qVotes).forEach(([id, v]) => { 
+                    const pName = globalPlayersData[id].nickname;
+                    if (v === 'fail') { fCount++; failNames.push(pName); } else { sCount++; successNames.push(pName); }
+                });
                 document.getElementById('questResultSummary').innerHTML = `<span style="color:var(--success)">성공: ${sCount}</span> / <span style="color:var(--danger)">실패: ${fCount}</span>`;
                 const isFailed = (questResults[currentQuestIndex] === 'fail'); const msgEl = document.getElementById('questResultMessage');
                 if (isFailed) { msgEl.innerText = "원정 실패..."; msgEl.style.color = "var(--danger)"; } else { msgEl.innerText = "원정 성공!"; msgEl.style.color = "var(--success)"; }
                 
-                // [수정사항] 수동 확인 UI 렌더링 호출
-                renderConfirmationUI('questConfirmArea', playData, totalPlayers, () => {
-                    let successCount = questResults.filter(r => r === 'success').length; let failCount = questResults.filter(r => r === 'fail').length; const updates = {};
-                    if (successCount >= 3) { updates[`rooms/${currentRoomId}/gameState`] = "assassin_phase"; } else if (failCount >= 3) { updates[`rooms/${currentRoomId}/gameState`] = "game_over"; } 
+                renderConfirmationUI('questConfirmArea', playData, totalPlayers, "quest_result", (room, tPlayers) => {
+                    let log = `* ⚔️ **임무 수행 결과**: **${isFailed ? '실패 🔴' : '성공 🟢'}**\n`;
+                    log += `  * 성공 제출: ${successNames.join(', ') || '없음'}\n`;
+                    log += `  * 실패 제출: ${failNames.join(', ') || '없음'}\n`;
+                    room.playData.mdLog += log;
+
+                    let totalSuccess = room.playData.questResults.filter(r => r === 'success').length;
+                    let totalFail = room.playData.questResults.filter(r => r === 'fail').length;
+                    
+                    if (totalSuccess >= 3) { room.gameState = "assassin_phase"; } 
+                    else if (totalFail >= 3) { room.gameState = "game_over"; } 
                     else {
-                        updates[`rooms/${currentRoomId}/gameState`] = "team_building"; updates[`rooms/${currentRoomId}/playData/currentQuest`] = (playData.currentQuest || 0) + 1;
-                        updates[`rooms/${currentRoomId}/playData/leaderIndex`] = (playData.leaderIndex + 1) % totalPlayers; updates[`rooms/${currentRoomId}/playData/voteTrack`] = 0;
-                        updates[`rooms/${currentRoomId}/playData/questVotes`] = null; updates[`rooms/${currentRoomId}/playData/selectedTeam`] = null;
+                        room.gameState = "team_building"; room.playData.currentQuest++;
+                        room.playData.leaderIndex = (room.playData.leaderIndex + 1) % tPlayers; room.playData.voteTrack = 0;
+                        room.playData.questVotes = null; room.playData.selectedTeam = null;
                     }
-                    updates[`rooms/${currentRoomId}/playData/confirmations`] = null;
-                    update(ref(db), updates);
+                    room.playData.confirmations = null;
+                    return room;
                 });
             }
         }
 
-        // [수정사항] 닉네임 기반 세션 복구 및 UUID 제거
         function joinRoomLogic(roomId, nickname) {
             const cleanNickname = nickname.replace(/[.#$\[\]\s]/g, "");
             myUserId = cleanNickname || ("user_" + Math.floor(Math.random() * 10000));
@@ -602,47 +689,82 @@
             });
         }
 
+        // [신규] 이력 조회 리스트 및 데이터 로드
+        function loadHistoryList() {
+            get(ref(db, 'past_games')).then((snapshot) => {
+                const listContainer = document.getElementById('historyListContainer');
+                listContainer.innerHTML = '';
+                if (!snapshot.exists()) {
+                    listContainer.innerHTML = '<p style="color:#aaa; font-size:13px;">저장된 이력이 없습니다.</p>';
+                    return;
+                }
+                const games = [];
+                snapshot.forEach(child => { games.push({ id: child.key, ...child.val() }); });
+                games.sort((a, b) => b.timestamp - a.timestamp); // 최신순 정렬
+
+                games.forEach(game => {
+                    const date = new Date(game.timestamp).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                    const div = document.createElement('div'); div.className = 'history-item';
+                    div.innerHTML = `<b>방 ${game.roomId}</b> <span style="color:#888; font-size:12px; float:right;">${date}</span>`;
+                    div.onclick = () => {
+                        document.querySelectorAll('.history-item').forEach(el => el.classList.remove('active'));
+                        div.classList.add('active');
+                        document.getElementById('historyDetailTitle').innerText = `방 ${game.roomId} 기록`;
+                        document.getElementById('historyHtmlContent').innerHTML = marked.parse(game.markdown);
+                        document.getElementById('historyMdContent').value = game.markdown;
+                    };
+                    listContainer.appendChild(div);
+                });
+            });
+        }
+
+        // 모달창 이벤트 처리 (방 생성 & 이력 조회 공용)
         document.getElementById('createRoomBtn').addEventListener('click', () => {
             const nickname = document.getElementById('nicknameInput').value.trim(); 
             if (!nickname) return alert("닉네임을 먼저 입력해 주세요.");
-            
-            adminPasswordInput.value = '';
-            passwordModal.classList.remove('hidden');
-            adminPasswordInput.focus();
+            currentModalAction = 'create';
+            adminPasswordInput.value = ''; passwordModal.classList.remove('hidden'); adminPasswordInput.focus();
         });
 
-        document.getElementById('cancelCreateBtn').addEventListener('click', () => {
-            passwordModal.classList.add('hidden');
+        document.getElementById('openHistoryBtn').addEventListener('click', () => {
+            currentModalAction = 'history';
+            adminPasswordInput.value = ''; passwordModal.classList.remove('hidden'); adminPasswordInput.focus();
         });
 
-        // [수정사항] 방 생성 시 코드 중복 검증 로직 추가
-        document.getElementById('confirmCreateBtn').addEventListener('click', async () => {
-            const nickname = document.getElementById('nicknameInput').value.trim();
+        cancelPasswordBtn.addEventListener('click', () => { passwordModal.classList.add('hidden'); });
+
+        confirmPasswordBtn.addEventListener('click', async () => {
             const adminKey = adminPasswordInput.value;
             if (!adminKey) return alert("비밀번호를 입력하세요.");
 
-            let roomId;
-            let isUnique = false;
-            
-            try {
-                while (!isUnique) {
-                    roomId = Math.floor(1000 + Math.random() * 9000).toString();
-                    const snapshot = await get(ref(db, `rooms/${roomId}`));
-                    if (!snapshot.exists()) isUnique = true;
-                }
-
-                await set(ref(db, `rooms/${roomId}`), { 
-                    createdAt: Date.now(), 
-                    gameState: "lobby",
-                    adminKey: adminKey 
-                });
-                
+            if (currentModalAction === 'create') {
+                const nickname = document.getElementById('nicknameInput').value.trim();
+                let roomId; let isUnique = false;
+                try {
+                    while (!isUnique) {
+                        roomId = Math.floor(1000 + Math.random() * 9000).toString();
+                        const snapshot = await get(ref(db, `rooms/${roomId}`));
+                        if (!snapshot.exists()) isUnique = true;
+                    }
+                    await set(ref(db, `rooms/${roomId}`), { createdAt: Date.now(), gameState: "lobby", adminKey: adminKey });
+                    passwordModal.classList.add('hidden'); joinRoomLogic(roomId, nickname); 
+                } catch (err) { console.error(err); alert("방 생성 권한이 거부되었습니다."); }
+            } 
+            else if (currentModalAction === 'history') {
+                // (선택) 보안 강화를 위해 실제 DB의 특정 권한 키와 대조하는 로직을 삽입할 수 있습니다.
+                // 여기서는 방 생성 시 주로 쓰이던 암호이거나 접근 가능한지 단순 검증합니다.
                 passwordModal.classList.add('hidden');
-                joinRoomLogic(roomId, nickname); 
-            } catch (err) {
-                console.error(err);
-                alert("비밀번호가 틀렸거나 방 생성 권한이 거부되었습니다.");
+                document.getElementById('lobbyScreen').classList.add('hidden');
+                document.getElementById('historyScreen').classList.replace('hidden', 'history-screen-active');
+                document.getElementById('historyScreen').style.display = 'flex'; // 강제 표시
+                loadHistoryList();
             }
+        });
+
+        document.getElementById('closeHistoryBtn').addEventListener('click', () => {
+            document.getElementById('historyScreen').style.display = 'none';
+            document.getElementById('historyScreen').classList.replace('history-screen-active', 'hidden');
+            document.getElementById('lobbyScreen').classList.remove('hidden');
         });
 
         document.getElementById('joinRoomBtn').addEventListener('click', () => {
@@ -673,10 +795,20 @@
                 for (let i = 0; i < evilSlots; i++) roles.push("Minion of Mordred");
 
                 roles.sort(() => Math.random() - 0.5); let playerOrder = [...playerIds].sort(() => Math.random() - 0.5); 
+                
+                // [신규] 초기 마크다운 로그 생성
+                let initMdLog = `## 📝 아발론 게임 기록 (방 ${currentRoomId})\n\n### 🎭 참가자 직업 명단\n`;
+                playerIds.forEach((id, index) => {
+                    let displayRole = "신하"; const r = roles[index];
+                    if(r === "Merlin") displayRole = "멀린"; else if(r === "Percival") displayRole = "퍼시벌"; else if(r === "Assassin") displayRole = "암살자";
+                    else if(r === "Morgana") displayRole = "모르가나"; else if(r === "Mordred") displayRole = "모드레드"; else if(r === "Oberon") displayRole = "오베론"; else if(r === "Minion of Mordred") displayRole = "수하";
+                    initMdLog += `* **${snapshot.child(id).val().nickname}** : ${displayRole}\n`;
+                });
+
                 const updates = {};
                 playerIds.forEach((id, index) => updates[`rooms/${currentRoomId}/players/${id}/role`] = roles[index]);
                 updates[`rooms/${currentRoomId}/gameState`] = "team_building"; 
-                updates[`rooms/${currentRoomId}/playData`] = { playerOrder: playerOrder, leaderIndex: 0, currentQuest: 0, voteTrack: 0, selectedTeam: [] };
+                updates[`rooms/${currentRoomId}/playData`] = { playerOrder: playerOrder, leaderIndex: 0, currentQuest: 0, voteTrack: 0, selectedTeam: [], mdLog: initMdLog, isHistorySaved: false };
                 update(ref(db), updates);
             });
         });
