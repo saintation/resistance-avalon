@@ -1,6 +1,6 @@
 import { test, expect, BrowserContext, Page } from '@playwright/test';
 
-const TARGET_URL = '[https://saintation.github.io/resistance-avalon/](https://saintation.github.io/resistance-avalon/)';
+const TARGET_URL = 'https://saintation.github.io/resistance-avalon/';
 const TOTAL_PLAYERS = Math.floor(Math.random() * 6) + 5; 
 
 test.describe.serial('레지스탕스 아발론 자동화 봇 시뮬레이션 (최종 UI 호환 및 안정화)', () => {
