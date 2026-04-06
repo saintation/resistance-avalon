@@ -298,43 +298,32 @@
             contentMd.classList.remove('hidden'); contentHtml.classList.add('hidden');
         });
 
-// v1.3: 스마트 복사 버튼 로직 개선 (개행 및 서식 유지)
+// v1.3: 스마트 복사 버튼 로직 (개행, 들여쓰기 완벽 유지형 하이브리드 복사)
         copyHistoryBtn.addEventListener('click', async () => {
-            const isMdView = !contentMd.classList.contains('hidden');
-            
+            const rawMarkdown = contentMd.value;
+            const rawHtml = contentHtml.innerHTML;
+
+            if (!rawMarkdown.trim()) return alert("복사할 내용이 없습니다.");
+
             try {
-                if (isMdView) {
-                    // 1. 마크다운 원문 복사
-                    if (!contentMd.value.trim()) return alert("복사할 내용이 없습니다.");
-                    await navigator.clipboard.writeText(contentMd.value);
+                if (window.ClipboardItem) {
+                    // 클립보드에 순수 텍스트용(마크다운)과 리치 텍스트용(HTML)을 동시에 기록
+                    const clipboardItem = new ClipboardItem({
+                        'text/plain': new Blob([rawMarkdown], { type: 'text/plain' }),
+                        'text/html': new Blob([rawHtml], { type: 'text/html' })
+                    });
+                    await navigator.clipboard.write([clipboardItem]);
                 } else {
-                    // 2. 렌더링 뷰 복사
-                    if (!contentHtml.innerText.trim()) return alert("복사할 내용이 없습니다.");
-                    
-                    const rawHtml = contentHtml.innerHTML;
-                    
-                    // 순수 텍스트(카카오톡 등)로 붙여넣기 될 때를 위한 후처리
-                    // 헤딩이나 리스트 기호 앞에 강제로 추가 줄바꿈을 삽입하여 가독성을 높입니다.
-                    let cleanText = contentHtml.innerText
-                        .replace(/\n{2,}/g, '\n\n') // 여러 번의 줄바꿈을 2개로 정규화
-                        .replace(/([^\n])\n(라운드|최종 결과|투표 결과|임무 수행 결과)/g, '$1\n\n\n$2'); // 주요 섹션 앞 넉넉한 여백
-                    
-                    // 최신 ClipboardItem API를 사용하여 리치 텍스트(HTML)와 순수 텍스트를 동시에 복사
-                    if (window.ClipboardItem) {
-                        const clipboardItem = new ClipboardItem({
-                            'text/plain': new Blob([cleanText], { type: 'text/plain' }),
-                            'text/html': new Blob([rawHtml], { type: 'text/html' })
-                        });
-                        await navigator.clipboard.write([clipboardItem]);
-                    } else {
-                        // 구형 브라우저 폴백
-                        await navigator.clipboard.writeText(cleanText);
-                    }
+                    // 구형 브라우저 폴백: 개행과 들여쓰기가 가장 확실한 마크다운을 강제로 사용
+                    await navigator.clipboard.writeText(rawMarkdown);
                 }
-                alert("기록 내용이 복사되었습니다.");
+                alert("기록이 복사되었습니다.\n(붙여넣는 프로그램에 따라 최적의 서식으로 자동 입력됩니다.)");
             } catch (err) {
                 console.error('복사 실패:', err);
-                alert("복사를 지원하지 않는 브라우저 환경입니다.");
+                // 최후의 수단 (예외 상황 시 안전망)
+                await navigator.clipboard.writeText(rawMarkdown)
+                    .then(() => alert("평문 형식으로 복사되었습니다."))
+                    .catch(() => alert("복사를 지원하지 않는 환경입니다."));
             }
         });
 
