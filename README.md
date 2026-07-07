@@ -4,7 +4,7 @@
 
 ---
 ## 🚩 실행 (Play)
-[https://saintation.github.io/resistance-avalon/](https://saintation.github.io/resistance-avalon/)
+[https://avalonkr.github.io/resistance-avalon/](https://avalonkr.github.io/resistance-avalon/)
 
 ---
 ## 🎲 최신 업데이트 내역 (v1.3)
