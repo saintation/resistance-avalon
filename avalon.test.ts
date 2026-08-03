@@ -47,7 +47,7 @@ test.describe.serial('레지스탕스 아발론 자동화 봇 시뮬레이션 (v
       await expect(initialHostPage.locator('#passwordModal')).not.toHaveClass(/hidden/, { timeout: 1500 });
     }).toPass({ intervals: [500, 1000], timeout: 15000 });
     
-    await initialHostPage.fill('#adminPasswordInput', 'dkqkffhs4028@'); 
+    await initialHostPage.fill('#adminPasswordInput', '1234'); 
     await initialHostPage.click('#confirmPasswordBtn'); 
 
     await expect(initialHostPage.locator('#roomTitle')).toHaveText(/방 코드: \d{4}/, { timeout: 15000 });
